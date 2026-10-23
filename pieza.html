@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pieza · Lista Construir</title>
+<!--
+  RENDERER de Lista Construir — composición "editorial collage".
+  Figura/fondo (papel + panel de color), jerarquía tipográfica (palabra gigante + resto chico),
+  imagen integrada detrás del titular, color modulado (papel + trama + sobreimpresión riso).
+  Dos tratamientos de imagen: duotono (serigrafía) y sticker (sin fondo).
+  Driven por URL. taller.html lo controla en un iframe.
+  Contrato: window.piezaLista · window.setFondo(bool) · nodo .pieza.activa
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700;800&display=swap">
+<style>
+  :root {
+    --azul:#274DEA; --azul-s:#1a35b8; --papel:#F4ECD8; --papel2:#EADFC4; --tinta:#14151c; --amarillo:#F5D700; --magenta:#8C0041; --lima:#97BA0B; --blanco:#fbfaf3;
+    --display:"Archivo Black","Archivo",system-ui,sans-serif;
+    --texto:"Archivo",system-ui,sans-serif;
+    color-scheme: light;
+  }
+  * { box-sizing:border-box; }
+  html,body { margin:0; background:#0e0e10; }
+  .escena { min-height:100vh; display:grid; place-items:center; padding:24px; }
+  body.incrustado .escena { padding:0; min-height:0; }
+  body.incrustado .barra { display:none; }
+  body:not(.incrustado) .escena { padding-top:64px; }
+
+  .pieza { position:relative; overflow:hidden; font-family:var(--texto); isolation:isolate; --pad: calc(var(--u)*6.5); }
+  .lienzo { position:absolute; inset:0; overflow:hidden; }
+
+  /* ---- fondo de papel ---- */
+  .fondo { position:absolute; inset:0; z-index:0; background:var(--papel); }
+  .pieza.inv .fondo { background:var(--azul); }
+  .pieza.sin-fondo .fondo { background:transparent !important; }
+  .tex-papel { position:absolute; inset:0; mix-blend-mode:multiply; opacity:.5;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='c'><feTurbulence type='fractalNoise' baseFrequency='0.01' numOctaves='3' seed='7'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23c)'/></svg>");
+    background-size: calc(var(--u)*110); }
+  .tex-grano { position:absolute; inset:0; mix-blend-mode:multiply; opacity:.10;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    background-size: calc(var(--u)*12); }
+  .pieza.sin-fondo .tex-papel, .pieza.sin-fondo .tex-grano { display:none; }
+
+  /* ---- panel de color (bloque que organiza) ---- */
+  .panel { position:absolute; z-index:1; background:var(--azul); }
+  .pieza.inv .panel { background:var(--papel); }
+  .panel .pint { position:absolute; inset:0; }
+  .panel .pint.trama { mix-blend-mode:multiply; opacity:.5;
+    background-image: radial-gradient(var(--tinta) 21%, transparent 22%);
+    background-size: calc(var(--u)*2.4) calc(var(--u)*2.4); }
+  .panel::before { content:""; position:absolute; inset:0; background:var(--magenta); mix-blend-mode:multiply; opacity:.3;
+    transform: translate(calc(var(--u)*-0.9), calc(var(--u)*0.7)); z-index:-1; }  /* fantasma riso corrido */
+
+  /* posición del panel por formato */
+  .pieza[data-formato="feed"] .panel,
+  .pieza[data-formato="historia"] .panel { top:-5%; bottom:-5%; right:-7%; width:62%; transform:rotate(-2.2deg); }
+  .pieza[data-formato="wide"] .panel { top:-6%; bottom:-6%; right:-5%; width:52%; transform:rotate(-1.5deg); }
+
+  /* ---- imágenes (recortes) ---- */
+  .recorte { position:absolute; z-index:2; }
+  .recorte .marco { background:var(--blanco); padding: calc(var(--u)*1); filter: drop-shadow(calc(var(--u)*.6) calc(var(--u)*.8) calc(var(--u)*1.1) rgba(16,19,26,.4)); }
+  .recorte .marco > canvas, .recorte .marco > img, .recorte .marco > .caja { display:block; width:100%; height:auto; }
+  .recorte.sticker > canvas, .recorte.sticker > img, .recorte.sticker > .caja { display:block; width:100%; height:auto;
+    filter: drop-shadow(calc(var(--u)*.5) calc(var(--u)*.7) calc(var(--u)*.9) rgba(16,19,26,.45)); }
+  .caja { aspect-ratio:4/5; display:grid; place-items:center; background:repeating-linear-gradient(45deg,#d9d2bf 0 calc(var(--u)*2), #efe8d4 calc(var(--u)*2) calc(var(--u)*4)); }
+  .caja span { font-family:var(--texto); font-weight:700; font-size: calc(var(--u)*2.2); text-transform:uppercase; color:#7a7360; letter-spacing:.06em; }
+
+  /* ---- capa de texto (encima de todo) ---- */
+  .capa { position:absolute; inset:0; z-index:3; padding:var(--pad); }
+  .tag { position:absolute; top:var(--pad); left:var(--pad); font-family:var(--texto); font-weight:800; font-size: calc(var(--u)*2.5);
+    letter-spacing:.02em; text-transform:uppercase; background:var(--amarillo); color:var(--tinta);
+    padding: calc(var(--u)*1) calc(var(--u)*1.7); transform:rotate(-2deg); box-shadow: calc(var(--u)*.3) calc(var(--u)*.4) 0 rgba(16,19,26,.25); }
+
+  .titulo { position:absolute; left:var(--pad); z-index:4; display:flex; flex-direction:column; gap: calc(var(--u)*0.6); }
+  .pieza[data-formato="feed"] .titulo, .pieza[data-formato="historia"] .titulo { bottom: calc(var(--u)*26); right: calc(var(--u)*4); }
+  .pieza[data-formato="wide"] .titulo { bottom: calc(var(--u)*20); right:46%; }
+  .reng { display:flex; flex-wrap:wrap; }
+  .reng.chico { gap: calc(var(--u)*0.6); margin-bottom: calc(var(--u)*0.8); }
+  .palabra { display:inline-flex; }
+  .reng.grande .palabra { gap: calc(var(--u)*0.5); }
+  .reng.chico .palabra { gap: calc(var(--u)*0.4); margin-right: calc(var(--u)*1.4); }
+
+  .chip { position:relative; font-family:var(--display); font-weight:400; text-transform:uppercase; line-height:.8; display:inline-block;
+    box-shadow: calc(var(--u)*.35) calc(var(--u)*.5) 0 rgba(16,19,26,.22); }
+  .chip::after { content:""; position:absolute; inset:0; mix-blend-mode:multiply; opacity:.15; pointer-events:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='90' height='90'><filter id='p'><feTurbulence type='fractalNoise' baseFrequency='0.5' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23p)'/></svg>");
+    background-size: calc(var(--u)*5); }
+  .reng.grande .chip { font-size: calc(var(--u)*15*var(--tf,1)); padding: calc(var(--u)*.3) calc(var(--u)*1.1); }
+  .reng.chico .chip  { font-size: calc(var(--u)*5); padding: calc(var(--u)*.3) calc(var(--u)*.8); box-shadow: calc(var(--u)*.25) calc(var(--u)*.35) 0 rgba(16,19,26,.22); }
+
+  .pie { position:absolute; left:var(--pad); bottom:var(--pad); right:var(--pad); display:flex; justify-content:space-between; align-items:flex-end; gap: calc(var(--u)*3); z-index:4; }
+  .info { font-family:var(--texto); font-weight:600; font-size: calc(var(--u)*2.7); line-height:1.25; max-width:26ch; margin:0; color:var(--tinta); }
+  .pieza.inv .info { color:var(--papel); }
+  .handle { font-family:var(--texto); font-weight:800; font-size: calc(var(--u)*2.4); letter-spacing:.02em; white-space:nowrap;
+    background:var(--papel); color:var(--tinta); padding: calc(var(--u)*.7) calc(var(--u)*1.3); transform:rotate(-1.5deg); }
+  .pieza.inv .handle { background:var(--tinta); color:var(--papel); }
+
+  .barra { position:fixed; z-index:99; inset:0 0 auto 0; display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+    padding:9px 14px; background:#15151a; border-bottom:1px solid #2a2a30; font:700 12px/1 var(--texto); color:#e8e8e2; }
+  .barra .g{ display:flex; gap:6px } .barra .sep{ width:1px; height:20px; background:#2a2a30 }
+  .barra button{ font:inherit; background:transparent; color:#e8e8e2; border:1.5px solid #3a3a42; border-radius:999px; padding:6px 11px; cursor:pointer; text-transform:uppercase; letter-spacing:.04em }
+  .barra button[aria-pressed="true"], .barra button:hover{ background:var(--amarillo); color:#15151a; border-color:var(--amarillo) }
+  .barra .et{ color:#7a7a82; font-weight:400; text-transform:uppercase; letter-spacing:.08em }
+  .marco-vista{ position:relative }
+</style>
+</head>
+<body>
+
+<div class="barra" id="barra">
+  <span class="et">pieza · prueba</span>
+  <div class="g" id="g-formato"></div><span class="sep"></span>
+  <div class="g" id="g-base"></div><span class="sep"></span>
+  <span class="et" id="medida"></span>
+</div>
+
+<div class="escena"><div class="marco-vista" id="marco"><div class="pieza activa" id="pieza"></div></div></div>
+
+<script>
+  const FORMATOS = {
+    feed:     { w:1080, h:1350, et:'Feed · 4:5' },
+    historia: { w:1080, h:1920, et:'Historia · 9:16' },
+    wide:     { w:1920, h:1080, et:'16:9' },
+  };
+  const DEF = {
+    formato:'feed', base:'crema', fondo:'1', grano:'10',
+    titulo:'DESPIERTA\nla escuela', acento:'amarillo', mayus:'mantener',
+    info:'Centro de estudiantes · Escuela de Diseño UDP', mostrar_info:'1',
+    etiqueta:'elecciones 2026', handle:'@listaconstruir.cedig',
+    trama:'5',
+    img1:'', img1_x:'40', img1_y:'16', img1_tam:'52', img1_giro:'-3', img1_duo:'azul', img1_trat:'duotono', slot1:'1',
+    img2:'', img2_x:'2', img2_y:'18', img2_tam:'22', img2_giro:'6', img2_duo:'magenta', img2_trat:'sticker', slot2:'0',
+  };
+  const VAR  = { amarillo:'var(--amarillo)', magenta:'var(--magenta)', azul:'var(--azul)', lima:'var(--lima)', papel:'var(--papel)', tinta:'var(--tinta)', blanco:'var(--blanco)' };
+  const CLARAS = ['amarillo','papel','lima','blanco'];
+  const RGB  = { amarillo:[245,215,0], magenta:[140,0,65], azul:[39,77,234], tinta:[20,21,28], lima:[151,186,11], papel:[244,236,216] };
+  const PAPER = [244,236,216], NEGRO = [20,21,28];
+
+  const incrustado = window.top !== window.self;
+  document.body.classList.toggle('incrustado', incrustado);
+  const qs = new URLSearchParams(location.search);
+  const val = k => qs.has(k) ? qs.get(k) : DEF[k];
+  const on  = k => { const v = val(k); return v === '1' || v === 'true'; };
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const casofn = t => { const m = val('mayus'); return m==='mayus'?t.toUpperCase():m==='minus'?t.toLowerCase():t; };
+
+  function idbOpen(){ return new Promise((res,rej)=>{ const r=indexedDB.open('construir-fotos',1); r.onupgradeneeded=()=>r.result.createObjectStore('f'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+  async function idbGet(key){ const db=await idbOpen(); return new Promise((res,rej)=>{ const t=db.transaction('f','readonly'); const rq=t.objectStore('f').get(key); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error); }); }
+  async function resolverSrc(v){ if(!v) return null; if(v.startsWith('idb:')){ const rec=await idbGet(v.slice(4)); if(!rec) return null; return URL.createObjectURL(rec instanceof Blob ? rec : rec.blob); } return v; }
+
+  function dentado(seed, n=22, jit=3.2) {
+    let s = seed; const rnd = () => { s=(s*9301+49297)%233280; return s/233280; };
+    const pts=[]; const edge=(fx,fy,tx,ty)=>{ for(let i=0;i<n;i++){ const t=i/n; pts.push([fx+(tx-fx)*t+(rnd()-.5)*jit, fy+(ty-fy)*t+(rnd()-.5)*jit]); } };
+    edge(0,0,100,0); edge(100,0,100,100); edge(100,100,0,100); edge(0,100,0,0);
+    return 'polygon(' + pts.map(p=>`${p[0].toFixed(1)}% ${p[1].toFixed(1)}%`).join(',') + ')';
+  }
+  const CLIPS = [3,19,41,67,89,113].map(s => dentado(s, 10, 2.4));
+  const parLetra = name => ({ bg: VAR[name] || 'var(--amarillo)', fg: CLARAS.includes(name) ? 'var(--tinta)' : 'var(--papel)' });
+
+  // título: 1ª línea GRANDE, el resto chico. Secuencia de color dominada por neutros + acento con cuentagotas.
+  function titularHTML() {
+    const lineas = val('titulo').split('\n');
+    const acento = val('acento');
+    const seqG = ['blanco','tinta','papel','tinta','blanco', acento];   // grande: neutros, 1 acento
+    const out = [];
+    let gi = 0;
+    // línea 1 (grande)
+    if (lineas[0]) {
+      const palabras = casofn(lineas[0]).split(/\s+/).filter(Boolean).map(pal => {
+        const letras = [...pal].map(ch => {
+          const par = parLetra(seqG[gi % seqG.length]);
+          const rot = ((gi*37)%9)-4, yo=(((gi*53)%7)-3)*0.35, clip=CLIPS[gi%CLIPS.length]; gi++;
+          return `<span class="chip" style="background:${par.bg};color:${par.fg};clip-path:${clip};transform:rotate(${rot}deg);margin-top:calc(var(--u)*${yo})">${esc(ch)}</span>`;
+        }).join('');
+        return `<span class="palabra">${letras}</span>`;
+      }).join('');
+      out.push(`<div class="reng grande">${palabras}</div>`);
+    }
+    // resto (chico) — una sola línea con las palabras del resto
+    const resto = lineas.slice(1).join(' ').trim();
+    if (resto) {
+      let ci = 0;
+      const palabras = casofn(resto).split(/\s+/).filter(Boolean).map(pal => {
+        const letras = [...pal].map(ch => {
+          const par = parLetra(ci % 4 === 0 ? acento : (ci % 2 ? 'tinta' : 'blanco'));
+          const rot = ((ci*29)%7)-3; ci++;
+          return `<span class="chip" style="background:${par.bg};color:${par.fg};transform:rotate(${rot}deg)">${esc(ch)}</span>`;
+        }).join('');
+        return `<span class="palabra">${letras}</span>`;
+      }).join('');
+      out.push(`<div class="reng chico">${palabras}</div>`);
+    }
+    return `<div class="titulo">${out.join('')}</div>`;
+  }
+
+  // ---- tratamientos de imagen ----
+  function autoNiveles(data, w, h) {
+    const vals = [];
+    for (let y=0; y<h; y+=3) for (let x=0; x<w; x+=3) { const i=(y*w+x)*4; if (data[i+3]>60) vals.push(0.299*data[i]+0.587*data[i+1]+0.114*data[i+2]); }
+    if (!vals.length) return [0, 255];
+    vals.sort((a,b)=>a-b);
+    return [vals[Math.floor(vals.length*0.04)], Math.max(vals[Math.floor(vals.length*0.96)], vals[0]+1)];
+  }
+  function halftoneDuo(img, ink, celda) {
+    const max = 760; let w = img.naturalWidth, h = img.naturalHeight;
+    const k = Math.min(1, max/Math.max(w,h)); w = Math.round(w*k); h = Math.round(h*k);
+    const t = document.createElement('canvas'); t.width=w; t.height=h;
+    const tc = t.getContext('2d'); tc.drawImage(img, 0, 0, w, h);
+    const data = tc.getImageData(0,0,w,h).data;
+    const [nlo,nhi] = autoNiveles(data, w, h);
+    const os = 2, cs = celda*os, hi = 0.72;
+    const out = document.createElement('canvas'); out.width = w*os; out.height = h*os;
+    const oc = out.getContext('2d');
+    for (let cy=0; cy<h; cy+=celda) for (let cx=0; cx<w; cx+=celda) {
+      let r=0,g=0,b=0,a=0,n=0;
+      for (let y=cy; y<Math.min(cy+celda,h); y++) for (let x=cx; x<Math.min(cx+celda,w); x++) { const i=(y*w+x)*4; r+=data[i]; g+=data[i+1]; b+=data[i+2]; a+=data[i+3]; n++; }
+      if (!n) continue; a/=n; if (a<60) continue;
+      let L = ((0.299*r+0.587*g+0.114*b)/n - nlo) / (nhi - nlo); L = L<0?0:L>1?1:L;
+      const base = L>hi ? PAPER : ink;
+      const X=cx*os, Y=cy*os;
+      oc.fillStyle = `rgb(${base[0]},${base[1]},${base[2]})`; oc.fillRect(X, Y, cs, cs);
+      const d = 1-L, f = Math.max(0, Math.min(1, (d-0.18)/0.62)), rr = cs*0.72*f;
+      if (rr>0.6) { oc.fillStyle = `rgb(${NEGRO[0]},${NEGRO[1]},${NEGRO[2]})`; oc.beginPath(); oc.arc(X+cs/2, Y+cs/2, rr, 0, 6.2832); oc.fill(); }
+    }
+    return out;
+  }
+  function quitarFondo(img) {
+    const max = 720; let w = img.naturalWidth, h = img.naturalHeight;
+    const k = Math.min(1, max/Math.max(w,h)); w = Math.round(w*k); h = Math.round(h*k);
+    const c = document.createElement('canvas'); c.width=w; c.height=h;
+    const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
+    const id = ctx.getImageData(0,0,w,h), d = id.data;
+    const blanco = i => { const a=d[i+3]; if(a<20) return true; const r=d[i],g=d[i+1],b=d[i+2]; const mx=Math.max(r,g,b),mn=Math.min(r,g,b); return (0.299*r+0.587*g+0.114*b)>232 && (mx-mn)<24; };
+    const vis = new Uint8Array(w*h), st = [];
+    const push = (x,y)=>{ if(x<0||y<0||x>=w||y>=h) return; const p=y*w+x; if(vis[p]) return; vis[p]=1; st.push(p); };
+    for (let x=0;x<w;x++){ push(x,0); push(x,h-1); } for (let y=0;y<h;y++){ push(0,y); push(w-1,y); }
+    while (st.length) { const p=st.pop(), i=p*4; if(!blanco(i)) continue; d[i+3]=0; const x=p%w, y=(p/w)|0; push(x+1,y); push(x-1,y); push(x,y+1); push(x,y-1); }
+    ctx.putImageData(id,0,0); return c;
+  }
+
+  function recorteHTML(n) {
+    if (!on('slot'+n)) return '';
+    const trat = val('img'+n+'_trat'), src = val('img'+n);
+    const x=val('img'+n+'_x'), y=val('img'+n+'_y'), tam=val('img'+n+'_tam'), giro=val('img'+n+'_giro');
+    const estilo = `left:${x}%; top:${y}%; width:${tam}%; transform:rotate(${giro}deg);`;
+    if (trat === 'sticker') {
+      const inner = src ? `<img data-raw="${esc(src)}" alt="" crossorigin="anonymous">` : `<div class="caja"><span>sticker ${n}</span></div>`;
+      return `<div class="recorte sticker" data-slot="${n}" data-trat="sticker" style="${estilo}">${inner}</div>`;
+    }
+    const seed = n===1 ? 137 : 613;
+    const out = dentado(seed, 22, 3.4), inn = dentado(seed+5, 22, 2.4);
+    const inner = src ? `<img data-raw="${esc(src)}" alt="" crossorigin="anonymous" style="clip-path:${inn}">`
+                      : `<div class="caja" style="clip-path:${inn}"><span>foto ${n}</span></div>`;
+    return `<div class="recorte" data-slot="${n}" data-trat="duotono" data-inn="${esc(inn)}" style="${estilo}"><div class="marco" style="clip-path:${out}">${inner}</div></div>`;
+  }
+  function procesarImagenes() {
+    const celda = Math.max(2, Number(val('trama'))||5);
+    const tareas = [...document.querySelectorAll('.recorte')].map(cont => (async () => {
+      const n = cont.dataset.slot, img = cont.querySelector('img[data-raw]'); if (!img) return;
+      const src = await resolverSrc(img.dataset.raw); if (!src) return;
+      await new Promise(res => { img.onload = res; img.onerror = res; img.src = src; });
+      if (!img.naturalWidth) return;
+      try {
+        let cv;
+        if (cont.dataset.trat === 'sticker') cv = quitarFondo(img);
+        else { cv = halftoneDuo(img, RGB[val('img'+n+'_duo')] || RGB.azul, celda); cv.style.clipPath = cont.dataset.inn; }
+        img.replaceWith(cv);
+      } catch (e) {}
+    })());
+    return Promise.all(tareas);
+  }
+
+  async function dibujar() {
+    const f = val('formato'); const dim = FORMATOS[f] || FORMATOS.feed;
+    const pieza = document.getElementById('pieza');
+    pieza.className = `pieza activa${val('base')==='azul'?' inv':''}${on('fondo')?'':' sin-fondo'}`;
+    pieza.dataset.formato = f;
+    pieza.style.setProperty('--u', (dim.w/100)+'px');
+    pieza.style.width = dim.w+'px'; pieza.style.height = dim.h+'px';
+
+    const etq = val('etiqueta').trim() ? `<div class="tag">${esc(val('etiqueta'))}</div>` : '';
+    const info = on('mostrar_info') && val('info').trim() ? `<p class="info">${esc(val('info'))}</p>` : '';
+
+    pieza.innerHTML = `<div class="lienzo">
+      <div class="fondo"><div class="tex-papel"></div><div class="tex-grano" style="opacity:${(Number(val('grano'))||0)/100}"></div></div>
+      <div class="panel"><div class="pint trama"></div></div>
+      ${recorteHTML(2)}
+      ${recorteHTML(1)}
+      <div class="capa">${etq}</div>
+      ${titularHTML()}
+      <div class="pie">${info}<span class="handle">${esc(val('handle'))}</span></div>
+    </div>`;
+
+    ajustarTitular();
+    ajustarVista(dim);
+    const m = document.getElementById('medida'); if (m) m.textContent = `${dim.w} × ${dim.h} px`;
+    await procesarImagenes();
+  }
+
+  function ajustarTitular() {
+    const pieza = document.getElementById('pieza'); const t = pieza.querySelector('.titulo'); const g = pieza.querySelector('.reng.grande'); if (!g || !t) return;
+    pieza.style.setProperty('--tf', '1');
+    const u = parseFloat(getComputedStyle(pieza).getPropertyValue('--u')) || 10;
+    const avail = t.clientWidth - u*1.5;
+    const need = g.scrollWidth * 1.12;     // margen por la rotación/sombra de las letras
+    if (need > avail) pieza.style.setProperty('--tf', Math.max(0.35, avail/need).toFixed(3));
+  }
+
+  function ajustarVista(dim) {
+    const pieza = document.getElementById('pieza');
+    if (incrustado) { pieza.style.transform='none'; return; }
+    const k = Math.min((window.innerWidth-48)/dim.w, (window.innerHeight-64-48)/dim.h, 1);
+    pieza.style.transformOrigin='0 0'; pieza.style.transform=`scale(${k})`;
+    const marco=document.getElementById('marco'); marco.style.width=dim.w*k+'px'; marco.style.height=dim.h*k+'px';
+  }
+
+  function setParam(k,v){ qs.set(k,v); history.replaceState(null,'','?'+qs.toString()); dibujar(); pintarBarra(); }
+  function botones(id,k,ops){ document.getElementById(id).innerHTML = ops.map(([v,t])=>`<button data-k="${k}" data-v="${v}" aria-pressed="${String(val(k))===String(v)}">${t}</button>`).join(''); }
+  function pintarBarra(){ if(incrustado) return;
+    botones('g-formato','formato', Object.keys(FORMATOS).map(f=>[f,FORMATOS[f].et]));
+    botones('g-base','base', [['crema','crema'],['azul','azul']]);
+  }
+  document.getElementById('barra').addEventListener('click', e=>{ const b=e.target.closest('button[data-k]'); if(b) setParam(b.dataset.k,b.dataset.v); });
+  window.addEventListener('resize', ()=>ajustarVista(FORMATOS[val('formato')]||FORMATOS.feed));
+
+  window.setFondo = mostrar => { document.getElementById('pieza').classList.toggle('sin-fondo', !mostrar); };
+  window.piezaLista = (async()=>{ try{ await document.fonts.ready; }catch(e){} await dibujar(); pintarBarra(); })();
+</script>
+</body>
+</html>

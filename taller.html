@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Taller · Lista Construir</title>
+<!--
+  Editor paramétrico de Lista Construir (interfaz estilo rastro). Maneja pieza.html por la URL.
+  Imágenes: picker visual con banco (assets/manifest.json) + fotos subidas por el usuario (IndexedDB,
+  compartida con pieza.html). Export: PNG con fondo, PNG sin fondo, PDF. Abrir con Live Server.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap">
+<style>
+  :root { --negro:#0d0e12; --gris:#17181d; --linea:#282a31; --acento:#F5D700; --azul:#274DEA; --blanco:#f1f1ec; --tenue:#85858f;
+    --mono:"Space Mono", ui-monospace, Menlo, monospace; }
+  * { box-sizing:border-box; }
+  [hidden]{ display:none !important; }
+  html,body{ height:100%; margin:0; }
+  body{ background:var(--negro); color:var(--blanco); font:400 13px/1.4 var(--mono); display:grid; grid-template-rows:auto 1fr; }
+  button,input,select,textarea{ font:inherit; color:inherit; }
+
+  .barra{ display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid var(--linea); flex-wrap:wrap; }
+  .marca{ font-weight:700; text-transform:uppercase; letter-spacing:.04em; margin-right:auto; }
+  .marca span{ color:var(--acento); }
+  .btn{ background:transparent; border:1.5px solid var(--blanco); border-radius:999px; padding:7px 14px; cursor:pointer; text-transform:uppercase; font-weight:700; font-size:12px; letter-spacing:.04em; }
+  .btn:hover{ background:var(--blanco); color:var(--negro); }
+  .btn.acc{ background:var(--acento); border-color:var(--acento); color:var(--negro); }
+  .btn.acc:hover{ background:var(--blanco); border-color:var(--blanco); }
+  .btn:disabled{ opacity:.35; cursor:default; }
+  .btn:focus-visible, .item:focus-visible{ outline:2px solid var(--acento); outline-offset:2px; }
+  .estado{ flex-basis:100%; font-size:12px; color:var(--tenue); margin:0; }
+
+  .cuerpo{ display:grid; grid-template-columns:190px minmax(0,1fr) 320px; min-height:0; }
+  .lista,.panel{ padding:14px; display:grid; gap:8px; align-content:start; overflow-y:auto; min-height:0; }
+  .lista{ border-right:1px solid var(--linea); }
+  .panel{ border-left:1px solid var(--linea); gap:12px; }
+  h2{ font-size:11px; color:var(--tenue); text-transform:uppercase; letter-spacing:.08em; margin:0 0 4px; font-weight:400; }
+  .item{ text-align:left; background:var(--gris); border:1.5px solid var(--linea); border-radius:12px; padding:10px 12px; cursor:pointer; display:grid; gap:2px; }
+  .item b{ font-size:13px; text-transform:uppercase; } .item span{ font-size:11px; color:var(--tenue); }
+  .item[aria-current="true"]{ border-color:var(--acento); } .item[aria-current="true"] b{ color:var(--acento); }
+
+  .sep{ border-top:1px solid var(--linea); padding-top:10px; margin-top:4px; text-transform:uppercase; letter-spacing:.1em; font-weight:700; color:var(--acento); font-size:11px; }
+  .sep:first-child{ border-top:0; padding-top:0; margin-top:0; }
+  .control{ display:grid; gap:5px; text-transform:uppercase; letter-spacing:.04em; font-size:11px; }
+  .control .fila{ display:flex; justify-content:space-between; gap:8px; }
+  .control output{ color:var(--acento); font-variant-numeric:tabular-nums; }
+  .control textarea{ width:100%; background:var(--gris); border:1px solid var(--linea); border-radius:6px; padding:7px 8px; font-size:12px; text-transform:none; letter-spacing:0; resize:vertical; }
+  .control input[type=text], .control select{ width:100%; background:var(--gris); border:1px solid var(--linea); border-radius:6px; padding:7px 8px; text-transform:none; letter-spacing:0; font-size:12px; }
+  .control input[type=range]{ width:100%; accent-color:var(--acento); }
+  .control.check{ display:flex; align-items:center; gap:8px; cursor:pointer; }
+  .control.check input{ accent-color:var(--acento); width:16px; height:16px; }
+  .nota{ color:var(--tenue); font-size:11px; line-height:1.4; text-transform:none; letter-spacing:0; }
+  .panel .btn{ width:100%; }
+
+  /* control de imagen (picker) */
+  .imgsel{ display:flex; gap:10px; align-items:stretch; }
+  .thumb{ width:72px; height:72px; border-radius:8px; border:1px solid var(--linea); background:var(--gris) center/cover no-repeat;
+    display:grid; place-items:center; color:var(--tenue); font-size:9px; text-align:center; flex:none;
+    background-image:var(--bg, none); background-color:#23242b; }
+  .thumb.vacia{ background:repeating-conic-gradient(#20212a 0 25%, #191a20 0 50%) 0/14px 14px; }
+  .imgbtns{ display:flex; flex-direction:column; gap:6px; justify-content:center; }
+  .mini{ background:transparent; border:1.5px solid var(--linea); color:var(--blanco); border-radius:999px; padding:5px 12px; cursor:pointer; text-transform:uppercase; font-weight:700; font-size:11px; }
+  .mini:hover{ border-color:var(--acento); color:var(--acento); }
+
+  .escenario{ position:relative; overflow:hidden; display:grid; place-items:center; padding:24px; background: repeating-conic-gradient(#121318 0 25%, #0e0f13 0 50%) 0 0 / 24px 24px; }
+  .marco{ position:relative; box-shadow:0 0 0 1px var(--linea), 0 20px 60px rgba(0,0,0,.6); }
+  .marco iframe{ position:absolute; left:0; top:0; border:0; transform-origin:0 0; background:#050505; }
+  .medida{ position:absolute; left:0; bottom:-26px; font-size:11px; color:var(--tenue); white-space:nowrap; }
+  .cargando{ position:absolute; inset:0; display:grid; place-items:center; background:rgba(13,14,18,.55); color:var(--acento); font-weight:700; text-transform:uppercase; letter-spacing:.06em; text-align:center; padding:16px; }
+
+  /* modal del banco */
+  .modal{ position:fixed; inset:0; z-index:50; background:rgba(5,6,9,.78); display:grid; place-items:center; padding:24px; }
+  .modal .caja{ background:var(--negro); border:1px solid var(--linea); border-radius:16px; width:min(760px,96vw); max-height:88vh; display:grid; grid-template-rows:auto auto 1fr; overflow:hidden; }
+  .modal .cab{ display:flex; align-items:center; gap:10px; padding:14px 16px; border-bottom:1px solid var(--linea); }
+  .modal .cab b{ margin-right:auto; text-transform:uppercase; letter-spacing:.04em; }
+  .modal .drop{ margin:14px 16px 0; border:1.5px dashed var(--linea); border-radius:12px; padding:12px; text-align:center; color:var(--tenue); font-size:12px; }
+  .modal.drag .drop{ border-color:var(--acento); color:var(--acento); }
+  .grilla{ padding:14px 16px; overflow-y:auto; display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:10px; }
+  .celda{ position:relative; aspect-ratio:1; border-radius:10px; overflow:hidden; border:1px solid var(--linea); background:#23242b center/cover no-repeat; cursor:pointer; }
+  .celda:hover{ border-color:var(--acento); }
+  .celda .x{ position:absolute; top:4px; right:4px; width:20px; height:20px; border-radius:50%; background:rgba(5,6,9,.7); color:#fff; border:0; cursor:pointer; font-size:12px; line-height:20px; display:none; }
+  .celda.user .x{ display:block; }
+  .celda .tag{ position:absolute; left:4px; bottom:4px; font-size:9px; background:rgba(5,6,9,.7); padding:1px 5px; border-radius:4px; color:var(--acento); text-transform:uppercase; }
+
+  @media (max-width:980px){
+    .cuerpo{ grid-template-columns:minmax(0,1fr); grid-template-rows:auto minmax(55vh,1fr) auto; }
+    .lista{ border-right:0; border-bottom:1px solid var(--linea); grid-auto-flow:column; overflow-x:auto; }
+    .panel{ border-left:0; border-top:1px solid var(--linea); }
+  }
+</style>
+</head>
+<body>
+<header class="barra">
+  <span class="marca"><span>construir</span> · taller</span>
+  <button class="btn" id="ant" aria-label="Formato anterior">←</button>
+  <button class="btn" id="sig" aria-label="Formato siguiente">→</button>
+  <button class="btn acc" id="png">PNG</button>
+  <button class="btn acc" id="png0">PNG sin fondo</button>
+  <button class="btn acc" id="pdf">PDF</button>
+  <p class="estado" id="estado">← → cambia de formato. Los ajustes se guardan solos y valen para los tres formatos.</p>
+</header>
+
+<div class="cuerpo">
+  <nav class="lista" aria-label="Formatos">
+    <h2>Formato</h2>
+    <div id="items" style="display:grid;gap:8px"></div>
+  </nav>
+  <main class="escenario" id="escenario">
+    <div class="marco" id="marco">
+      <iframe id="vista" title="Vista de la pieza"></iframe>
+      <span class="medida" id="medida"></span>
+      <div class="cargando" id="cargando">Dibujando…</div>
+    </div>
+  </main>
+  <aside class="panel" aria-label="Edición">
+    <div id="controles" style="display:grid;gap:12px"></div>
+    <button class="btn" id="restablecer">Restablecer ajustes</button>
+  </aside>
+</div>
+
+<div class="modal" id="modal" hidden>
+  <div class="caja">
+    <div class="cab">
+      <b>Banco de imágenes</b>
+      <label class="btn acc" style="cursor:pointer">Subir foto<input type="file" id="subir" accept="image/*" multiple hidden></label>
+      <button class="btn" id="cerrar">Cerrar</button>
+    </div>
+    <div class="drop" id="drop">Arrastrá fotos acá para sumarlas al banco</div>
+    <div class="grilla" id="grilla"></div>
+  </div>
+</div>
+
+<script>
+  const FORMATOS = [
+    { f:'feed',     nombre:'Feed',     detalle:'Post 4:5',   w:1080, h:1350 },
+    { f:'historia', nombre:'Historia', detalle:'9:16',       w:1080, h:1920 },
+    { f:'wide',     nombre:'16:9',     detalle:'Horizontal', w:1920, h:1080 },
+  ];
+
+  const S   = t => ({ tipo:'sep', nombre:t });
+  const TXT = (k,n,d,nota) => ({ tipo:'text', k, nombre:n, d, nota });
+  const AREA= (k,n,d,nota) => ({ tipo:'area', k, nombre:n, d, nota });
+  const RNG = (k,n,min,max,paso,d,unidad='') => ({ tipo:'range', k, nombre:n, min, max, paso, d, unidad });
+  const SEL = (k,n,ops,d) => ({ tipo:'select', k, nombre:n, opciones:ops, d });
+  const CHK = (k,n,d) => ({ tipo:'check', k, nombre:n, d });
+  const IMG = (k,n) => ({ tipo:'imagen', k, nombre:n, d:'' });
+  const COLORES = [['papel','papel'],['amarillo','amarillo'],['magenta','magenta'],['azul','azul'],['tinta','tinta'],['lima','lima']];
+  const DUOS = [['amarillo','amarillo'],['magenta','magenta'],['azul','azul'],['tinta','negro']];
+  const TRATS = [['duotono','foto · duotono'],['sticker','sticker · sin fondo']];
+
+  const CONTROLES = [
+    S('contenido'),
+    AREA('titulo','título (un renglón por línea)','DESPIERTA\nLA ESCUELA'),
+    SEL('mayus','mayúsculas', [['mayus','MAYÚSCULAS'],['minus','minúsculas'],['normal','como lo escribo']], 'mayus'),
+    TXT('etiqueta','etiqueta','elecciones 2026'),
+    CHK('mostrar_info','mostrar info', 1),
+    AREA('info','info concisa','Centro de estudiantes · Escuela de Diseño UDP'),
+    TXT('handle','usuario','@listaconstruir.cedig'),
+
+    S('letras recortadas (título)'),
+    SEL('acento','color de acento (cuentagotas)', COLORES, 'amarillo'),
+
+    S('color y fondo'),
+    SEL('base','fondo base', [['crema','papel crema'],['azul','azul']], 'crema'),
+    RNG('grano','grano',0,80,1,10),
+
+    S('imagen 1'),
+    CHK('slot1','mostrar imagen 1', 1),
+    IMG('img1','imagen 1'),
+    SEL('img1_trat','tratamiento', TRATS, 'duotono'),
+    SEL('img1_duo','tinta (si es duotono)', DUOS, 'amarillo'),
+    RNG('img1_x','posición X',-20,90,1,46,' %'),
+    RNG('img1_y','posición Y',-20,90,1,28,' %'),
+    RNG('img1_tam','tamaño',10,100,1,56,' %'),
+    RNG('img1_giro','giro',-20,20,1,-3,' °'),
+
+    S('imagen 2'),
+    CHK('slot2','mostrar imagen 2', 0),
+    IMG('img2','imagen 2'),
+    SEL('img2_trat','tratamiento', TRATS, 'sticker'),
+    SEL('img2_duo','tinta (si es duotono)', DUOS, 'magenta'),
+    RNG('img2_x','posición X',-20,90,1,4,' %'),
+    RNG('img2_y','posición Y',-20,90,1,58,' %'),
+    RNG('img2_tam','tamaño',10,100,1,28,' %'),
+    RNG('img2_giro','giro',-20,20,1,4,' °'),
+
+    S('trama'),
+    RNG('trama','tamaño de la trama',3,10,1,5,' px'),
+
+    S('carrusel'),
+    CHK('contador','mostrar contador', 0),
+    RNG('slide','slide actual',1,10,1,1),
+    RNG('slides','total de slides',1,10,1,5),
+  ];
+
+  const LIB_IMG = 'https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js';
+  const LIB_PDF = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  const CLAVE = 'construir-taller';
+  const $ = id => document.getElementById(id);
+  const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  let actual = 0, lista = null, espera = null;
+  try { actual = Math.max(0, FORMATOS.findIndex(x => x.f === localStorage.getItem(CLAVE+'-fmt'))); } catch(e){}
+
+  const avisar = t => { $('estado').textContent = t; };
+  const ocupado = si => ['ant','sig','png','png0','pdf'].forEach(id => { $(id).disabled = si; });
+
+  // ---- IndexedDB (compartida con pieza.html) ----
+  function idbOpen(){ return new Promise((res,rej)=>{ const r=indexedDB.open('construir-fotos',1); r.onupgradeneeded=()=>r.result.createObjectStore('f'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+  async function idbSet(k,v){ const db=await idbOpen(); return new Promise((res,rej)=>{ const t=db.transaction('f','readwrite'); t.objectStore('f').put(v,k); t.oncomplete=()=>res(); t.onerror=()=>rej(t.error); }); }
+  async function idbGet(k){ const db=await idbOpen(); return new Promise((res,rej)=>{ const t=db.transaction('f','readonly'); const rq=t.objectStore('f').get(k); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error); }); }
+  async function idbList(){ const db=await idbOpen(); return new Promise((res,rej)=>{ const t=db.transaction('f','readonly'); const rq=t.objectStore('f').getAllKeys(); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error); }); }
+  async function idbDel(k){ const db=await idbOpen(); return new Promise((res,rej)=>{ const t=db.transaction('f','readwrite'); t.objectStore('f').delete(k); t.oncomplete=()=>res(); t.onerror=()=>rej(t.error); }); }
+
+  // ---- banco ----
+  let BANCO = []; const bancoMap = new Map();
+  async function cargarBanco() {
+    BANCO = []; bancoMap.clear();
+    let keys = []; try { keys = await idbList(); } catch(e){}
+    for (const k of keys.filter(k => String(k).startsWith('u:'))) {
+      try { const blob = await idbGet(k); const url = URL.createObjectURL(blob instanceof Blob ? blob : blob.blob);
+        const e = { id:'idb:'+k, src:url, user:true, key:k }; BANCO.push(e); bancoMap.set(e.id, e); } catch(e){}
+    }
+    try { const m = await fetch('assets/manifest.json').then(r => r.json());
+      for (const f of m) { const e = { id:'assets/'+f, src:'assets/'+f, user:false }; BANCO.push(e); bancoMap.set(e.id, e); } } catch(e){}
+  }
+  const bancoSrc = id => { const e = bancoMap.get(id); if (e) return e.src; return (id && id.startsWith('assets/')) ? id : ''; };
+
+  // ---- ajustes ----
+  function ajustes() {
+    let g = {}; try { g = JSON.parse(localStorage.getItem(CLAVE) || '{}'); } catch(e){}
+    const v = {}; CONTROLES.filter(c => c.k).forEach(c => { v[c.k] = c.k in g ? g[c.k] : c.d; });
+    return v;
+  }
+  function guardar(v) { try { localStorage.setItem(CLAVE, JSON.stringify(v)); } catch(e){} }
+  function setVal(k, valor) { const v = ajustes(); v[k] = valor; guardar(v); }
+  function url(fmt) {
+    const v = ajustes();
+    const q = new URLSearchParams({ formato: fmt.f });
+    Object.entries(v).forEach(([k,val]) => q.set(k, typeof val === 'boolean' ? (val?'1':'0') : val));
+    return `pieza.html?${q}`;
+  }
+
+  // ---- panel ----
+  const mostrar = (c,v) => c.tipo === 'range' ? `${v}${c.unidad}` : '';
+  function pintarPanel() {
+    const v = ajustes();
+    $('controles').innerHTML = CONTROLES.map(c => {
+      const id = `c-${c.k}`, val = v[c.k];
+      if (c.tipo === 'sep') return `<div class="sep">${esc(c.nombre)}</div>`;
+      if (c.tipo === 'check') return `<label class="control check"><input type="checkbox" id="${id}" data-k="${c.k}" ${val===true||val===1||val==='1'?'checked':''}> ${esc(c.nombre)}</label>`;
+      if (c.tipo === 'imagen') {
+        const src = val ? bancoSrc(val) : '';
+        return `<div class="control"><span>${esc(c.nombre)}</span><div class="imgsel">
+          <div class="thumb ${src?'':'vacia'}" style="--bg:${src?`url('${src}')`:'none'}">${src?'':'sin<br>imagen'}</div>
+          <div class="imgbtns"><button type="button" class="mini" data-elegir="${c.k}">Elegir</button><button type="button" class="mini" data-quitar="${c.k}">Quitar</button></div>
+        </div></div>`;
+      }
+      let campo = '';
+      if (c.tipo === 'text') campo = `<input type="text" id="${id}" data-k="${c.k}" value="${esc(val)}">`;
+      if (c.tipo === 'area') campo = `<textarea id="${id}" data-k="${c.k}" rows="3" spellcheck="false">${esc(val)}</textarea>`;
+      if (c.tipo === 'range') campo = `<input type="range" id="${id}" data-k="${c.k}" min="${c.min}" max="${c.max}" step="${c.paso}" value="${val}">`;
+      if (c.tipo === 'select') campo = `<select id="${id}" data-k="${c.k}">${c.opciones.map(o => { const [vl,tx]=Array.isArray(o)?o:[o,o]; return `<option value="${esc(vl)}" ${vl===val?'selected':''}>${esc(tx)}</option>`; }).join('')}</select>`;
+      return `<label class="control" for="${id}"><span class="fila"><span>${esc(c.nombre)}</span><output id="o-${c.k}">${esc(mostrar(c,val))}</output></span>${campo}${c.nota?`<span class="nota">${esc(c.nota)}</span>`:''}</label>`;
+    }).join('');
+  }
+  $('controles').addEventListener('input', e => {
+    const el = e.target.closest('[data-k]'); if (!el) return;
+    const c = CONTROLES.find(x => x.k === el.dataset.k);
+    const v = ajustes();
+    v[c.k] = c.tipo === 'check' ? el.checked : c.tipo === 'range' ? Number(el.value) : el.value;
+    guardar(v);
+    const o = $(`o-${c.k}`); if (o) o.textContent = mostrar(c, v[c.k]);
+    clearTimeout(espera);
+    espera = setTimeout(() => cargar(actual, true).catch(er => avisar(er.message)), c.tipo==='text'||c.tipo==='area' ? 500 : 300);
+  });
+  $('controles').addEventListener('click', e => {
+    const el = e.target.closest('[data-elegir],[data-quitar]'); if (!el) return;
+    if (el.dataset.elegir) abrirPicker(el.dataset.elegir);
+    else { setVal(el.dataset.quitar, ''); pintarPanel(); cargar(actual, true).catch(er=>avisar(er.message)); }
+  });
+  $('restablecer').addEventListener('click', () => { try{ localStorage.removeItem(CLAVE); }catch(e){} pintarPanel(); cargar(actual,true).catch(er=>avisar(er.message)); avisar('Ajustes restablecidos.'); });
+
+  // ---- picker ----
+  let slotActivo = null;
+  function abrirPicker(k) { slotActivo = k; pintarBanco(); $('modal').hidden = false; }
+  function cerrarPicker() { $('modal').hidden = true; slotActivo = null; }
+  function pintarBanco() {
+    $('grilla').innerHTML = BANCO.map(e => `<div class="celda ${e.user?'user':''}" data-id="${esc(e.id)}" style="background-image:url('${e.src}')">
+      ${e.user?`<button class="x" data-del="${esc(e.key)}" title="Eliminar">✕</button>`:''}${e.user?'<span class="tag">tuya</span>':''}</div>`).join('')
+      || '<p style="color:var(--tenue);grid-column:1/-1">Sin imágenes. Subí una foto con el botón de arriba.</p>';
+  }
+  $('grilla').addEventListener('click', async e => {
+    const del = e.target.closest('[data-del]');
+    if (del) { e.stopPropagation(); try{ await idbDel(del.dataset.del); }catch(er){} await cargarBanco(); pintarBanco(); pintarPanel(); return; }
+    const celda = e.target.closest('[data-id]'); if (!celda) return;
+    setVal(slotActivo, celda.dataset.id);
+    cerrarPicker(); pintarPanel(); cargar(actual, true).catch(er=>avisar(er.message));
+  });
+  $('cerrar').addEventListener('click', cerrarPicker);
+  $('modal').addEventListener('click', e => { if (e.target === $('modal')) cerrarPicker(); });
+
+  async function sumarArchivos(files) {
+    let ultima = null;
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) continue;
+      const key = 'u:' + Date.now() + '-' + Math.random().toString(36).slice(2,7);
+      try { await idbSet(key, file); ultima = 'idb:'+key; } catch(e){ avisar('No se pudo guardar la imagen (muy pesada).'); }
+    }
+    await cargarBanco(); pintarBanco();
+    if (ultima && slotActivo) { setVal(slotActivo, ultima); cerrarPicker(); pintarPanel(); cargar(actual, true).catch(er=>avisar(er.message)); }
+  }
+  $('subir').addEventListener('change', e => sumarArchivos([...e.target.files]));
+  const drop = $('modal');
+  ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('drag'); }));
+  ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); if (ev==='drop' || e.target===drop) drop.classList.remove('drag'); }));
+  drop.addEventListener('drop', e => { if (e.dataTransfer && e.dataTransfer.files.length) sumarArchivos([...e.dataTransfer.files]); });
+
+  // ---- lista y vista ----
+  function pintarLista() {
+    $('items').innerHTML = FORMATOS.map((x,i) => `<button class="item" data-i="${i}" aria-current="${i===actual}"><b>${x.nombre}</b><span>${x.detalle} · ${x.w}×${x.h}</span></button>`).join('');
+  }
+  function ajustar() {
+    const x = FORMATOS[actual], e = $('escenario');
+    const k = Math.min((e.clientWidth-48)/x.w, (e.clientHeight-70)/x.h, 1);
+    Object.assign($('vista').style, { width:x.w+'px', height:x.h+'px', transform:`scale(${k})` });
+    Object.assign($('marco').style, { width:x.w*k+'px', height:x.h*k+'px' });
+    $('medida').textContent = `${x.w} × ${x.h} px · vista al ${Math.round(k*100)} %`;
+  }
+  function cargar(i, mismo=false) {
+    actual = (i + FORMATOS.length) % FORMATOS.length;
+    try { localStorage.setItem(CLAVE+'-fmt', FORMATOS[actual].f); } catch(e){}
+    if (!mismo) { pintarLista(); }
+    ajustar();
+    $('cargando').hidden = false; $('cargando').textContent = 'Dibujando…';
+    const vista = $('vista');
+    lista = new Promise((ok,mal) => {
+      vista.onload = async () => {
+        try {
+          const w = vista.contentWindow; if (!w || !w.document) throw new Error('sin acceso');
+          await (w.piezaLista || Promise.resolve());
+          await w.document.fonts.ready;
+          await new Promise(r => setTimeout(r, 120));
+          $('cargando').hidden = true; ok(w);
+        } catch(e) {
+          $('cargando').textContent = 'Abrí esta página con Live Server';
+          mal(new Error('No se puede leer la pieza. Abrí taller.html con Live Server (no como archivo).'));
+        }
+      };
+    });
+    vista.src = url(FORMATOS[actual]);
+    return lista;
+  }
+
+  // ---- exportar ----
+  async function conLibreria(w) {
+    if (w.htmlToImage) return w.htmlToImage;
+    await new Promise((ok,mal) => { const s = w.document.createElement('script'); s.src = LIB_IMG; s.onload = ok; s.onerror = () => mal(new Error('No se pudo cargar html-to-image (revisá la conexión).')); w.document.head.appendChild(s); });
+    return w.htmlToImage;
+  }
+  function cargarPDF() {
+    if (window.jspdf) return Promise.resolve();
+    return new Promise((ok,mal) => { const s = document.createElement('script'); s.src = LIB_PDF; s.onload = ok; s.onerror = () => mal(new Error('No se pudo cargar jsPDF.')); document.head.appendChild(s); });
+  }
+  async function pngDataUrl(w, conFondo) {
+    const x = FORMATOS[actual];
+    const lib = await conLibreria(w);
+    const nodo = w.document.querySelector('.pieza.activa');
+    if (!conFondo && w.setFondo) { w.setFondo(false); await new Promise(r => setTimeout(r, 60)); }
+    try {
+      return await lib.toPng(nodo, { width:x.w, height:x.h, pixelRatio:2, cacheBust:true,
+        backgroundColor: conFondo ? undefined : 'transparent', style:{ transform:'none' } });
+    } finally { if (!conFondo && w.setFondo) w.setFondo(true); }
+  }
+  function descargar(href, nombre) { const a = Object.assign(document.createElement('a'), { href, download:nombre }); document.body.appendChild(a); a.click(); a.remove(); }
+  const nombreBase = () => `construir-${FORMATOS[actual].f}`;
+
+  async function exportarPNG(conFondo) {
+    ocupado(true);
+    try { avisar(`Exportando PNG${conFondo?'':' sin fondo'}…`);
+      const w = await lista; const u = await pngDataUrl(w, conFondo);
+      descargar(u, `${nombreBase()}${conFondo?'':'-sinfondo'}.png`);
+      avisar(`Descargado: ${nombreBase()}${conFondo?'':'-sinfondo'}.png`);
+    } catch(e) { avisar(`No se pudo exportar: ${e.message}`); } finally { ocupado(false); }
+  }
+  async function exportarPDF() {
+    ocupado(true);
+    try { avisar('Exportando PDF…');
+      const w = await lista; await cargarPDF(); const x = FORMATOS[actual];
+      const img = await pngDataUrl(w, true);
+      const doc = new window.jspdf.jsPDF({ orientation: x.w >= x.h ? 'landscape' : 'portrait', unit:'px', format:[x.w, x.h] });
+      doc.addImage(img, 'PNG', 0, 0, x.w, x.h); doc.save(`${nombreBase()}.pdf`);
+      avisar(`Descargado: ${nombreBase()}.pdf`);
+    } catch(e) { avisar(`No se pudo exportar: ${e.message}`); } finally { ocupado(false); }
+  }
+
+  $('png').addEventListener('click', () => exportarPNG(true));
+  $('png0').addEventListener('click', () => exportarPNG(false));
+  $('pdf').addEventListener('click', () => exportarPDF());
+  $('ant').addEventListener('click', () => cargar(actual-1).catch(e=>avisar(e.message)));
+  $('sig').addEventListener('click', () => cargar(actual+1).catch(e=>avisar(e.message)));
+  $('items').addEventListener('click', e => { const b = e.target.closest('[data-i]'); if (b) cargar(Number(b.dataset.i)).catch(er=>avisar(er.message)); });
+  document.addEventListener('keydown', e => {
+    if (!$('modal').hidden && e.key === 'Escape') { cerrarPicker(); return; }
+    if ($('ant').disabled || e.target.closest('input,select,textarea')) return;
+    if (e.key === 'ArrowLeft') cargar(actual-1).catch(er=>avisar(er.message));
+    if (e.key === 'ArrowRight') cargar(actual+1).catch(er=>avisar(er.message));
+  });
+  window.addEventListener('resize', ajustar);
+
+  (async () => {
+    await cargarBanco();
+    pintarLista(); pintarPanel();
+    cargar(actual).catch(e => avisar(e.message));
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+# macOS
+.DS_Store
+
+# Piezas exportadas desde el taller (se bajan, no son fuente del proyecto)
+construir-*.png
+construir-*.pdf

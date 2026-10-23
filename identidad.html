@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Identidad · Lista Construir</title>
+<!--
+  Núcleo de identidad de Lista Construir (@listaconstruir.cedig).
+  Fuente de verdad para la plataforma: color, tipografía, isotipo y kit de collage.
+  Abrir con Live Server. Las variables de :root son los tokens que pieza.html y taller.html consumen.
+
+  Tipografía: Mon Trappist es el titular. Como viene en archivo (no Google Fonts), se carga por
+  @font-face desde ./fuentes/MonTrappist.*; mientras no esté el archivo, cae en Anton (stand-in
+  del mismo peso condensado-negro) para ver la jerarquía. Apenas pongas el .otf/.woff2 ahí, aparece solo.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;500;600;800&family=Space+Mono:wght@400;700&display=swap">
+<style>
+  /* Mon Trappist desde archivo local; si no existe, el stack cae en Anton (abajo). */
+  @font-face {
+    font-family: "Mon Trappist";
+    src: url("./fuentes/MonTrappist.woff2") format("woff2"),
+         url("./fuentes/MonTrappist.otf") format("opentype");
+    font-weight: 900; font-display: swap;
+  }
+
+  :root {
+    /* ---- TOKENS DE MARCA (la plataforma lee estos) ---- */
+    --azul:    #274DEA;   /* base */
+    --papel:   #F7F2E0;   /* fondo claro / recortes */
+    --tinta:   #10131A;   /* texto, trazo del isotipo */
+    --amarillo:#F5D700;   /* acento 1 */
+    --magenta: #8C0041;   /* acento 2 */
+    --lima:    #97BA0B;   /* pop: solo estallidos/estrella */
+
+    --display: "Mon Trappist", "Anton", system-ui, sans-serif;
+    --texto:   "Archivo", system-ui, sans-serif;
+    --mono:    "Space Mono", ui-monospace, Menlo, monospace;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--papel);
+    color: var(--tinta);
+    font: 400 16px/1.5 var(--texto);
+    -webkit-font-smoothing: antialiased;
+  }
+  /* grano de papel sutil sobre todo */
+  body::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 50;
+    opacity: .05; mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 16px; }
+
+  /* ---- Portada ---- */
+  .hero {
+    background: var(--azul); color: var(--papel);
+    border-radius: 18px; padding: 40px 32px; position: relative; overflow: hidden;
+    display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center;
+  }
+  .hero .k { font: 700 12px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; opacity: .85; }
+  .hero h1 {
+    font-family: var(--display); font-weight: 900; margin: 10px 0 0;
+    font-size: clamp(54px, 11vw, 132px); line-height: .82; letter-spacing: .01em;
+    text-transform: uppercase; color: var(--papel);
+  }
+  .hero h1 em { font-style: normal; color: var(--amarillo); }
+  .hero .sub { margin-top: 16px; max-width: 40ch; font-size: 15px; opacity: .92; }
+  .hero .marca-iso { width: clamp(120px, 20vw, 190px); height: auto; filter: drop-shadow(0 8px 0 rgba(0,0,0,.15)); }
+  /* estallido detrás */
+  .hero .burst { position: absolute; right: -40px; top: -40px; width: 220px; height: 220px; opacity: .25; }
+
+  /* ---- Secciones ---- */
+  section { margin-top: 48px; }
+  .eyebrow {
+    font: 700 12px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase;
+    color: var(--magenta); display: inline-block; margin-bottom: 10px;
+    border-bottom: 2px solid var(--magenta); padding-bottom: 4px;
+  }
+  h2.tit {
+    font-family: var(--display); font-weight: 900; text-transform: uppercase;
+    font-size: clamp(30px, 6vw, 56px); line-height: .9; margin: 0 0 8px;
+  }
+  .lede { max-width: 62ch; color: #2b2f38; margin: 0 0 22px; }
+  .regla { background: var(--tinta); color: var(--papel); border-radius: 10px; padding: 12px 16px;
+    font: 500 14px/1.45 var(--texto); display: flex; gap: 12px; align-items: baseline; margin: 10px 0; }
+  .regla b { font-family: var(--mono); color: var(--amarillo); white-space: nowrap; font-size: 12px; letter-spacing: .06em; }
+
+  /* ---- Isotipo ---- */
+  .iso-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; align-items: stretch; }
+  .iso-card { border: 2px solid var(--tinta); border-radius: 14px; padding: 20px; display: grid; place-items: center; gap: 10px; background: var(--papel); text-align: center; }
+  .iso-card.azul { background: var(--azul); border-color: var(--azul); }
+  .iso-card.azul svg [data-ink]{ fill: var(--papel); } .iso-card.azul svg [data-paper]{ fill: var(--azul); }
+  .iso-card.tinta { background: var(--tinta); border-color: var(--tinta); }
+  .iso-card.tinta svg [data-ink]{ fill: var(--papel); } .iso-card.tinta svg [data-paper]{ fill: var(--tinta); }
+  .iso-card .cap { font: 700 11px/1.3 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: inherit; }
+  .iso-card.azul .cap, .iso-card.tinta .cap { color: var(--papel); }
+  .iso-32 { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+  .iso-32 .chip { display: grid; place-items: center; gap: 6px; font: 700 10px/1 var(--mono); text-transform: uppercase; color: #2b2f38; }
+  .iso-32 .pfp { width: 56px; height: 56px; border-radius: 50%; overflow: hidden; background: var(--azul); display: grid; place-items: center; }
+  .iso-32 .pfp.s32 { width: 32px; height: 32px; }
+  .iso-32 .pfp svg [data-ink]{ fill: var(--papel); } .iso-32 .pfp svg [data-paper]{ fill: var(--azul); }
+
+  /* ---- Paleta ---- */
+  .paleta { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .sw { border-radius: 12px; overflow: hidden; border: 1px solid rgba(0,0,0,.12); }
+  .sw .chip { height: 110px; }
+  .sw .meta { padding: 10px 12px; background: var(--papel); }
+  .sw .rol { font: 700 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+  .sw .nom { font-weight: 800; margin: 4px 0 2px; }
+  .sw .hex { font: 400 12px var(--mono); color: #555; }
+  .sw .uso { font-size: 12px; color: #444; margin-top: 4px; }
+
+  /* ---- Tipografía ---- */
+  .spec { border: 2px solid var(--tinta); border-radius: 14px; overflow: hidden; }
+  .spec .row { padding: 18px 20px; border-bottom: 1px solid rgba(0,0,0,.12); }
+  .spec .row:last-child { border-bottom: 0; }
+  .spec .lbl { font: 700 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--magenta); margin-bottom: 8px; }
+  .spec .display-xl { font-family: var(--display); font-weight: 900; text-transform: uppercase; font-size: clamp(40px, 9vw, 92px); line-height: .86; letter-spacing: .01em; }
+  .spec .cuerpo { font-family: var(--texto); font-size: 17px; max-width: 60ch; }
+  .spec .cuerpo b { font-weight: 800; }
+  .spec .tag { font-family: var(--mono); font-size: 13px; background: var(--tinta); color: var(--amarillo); display: inline-block; padding: 4px 8px; border-radius: 6px; letter-spacing: .04em; }
+  .nota-fuente { font-size: 13px; color: #555; margin-top: 10px; }
+  .nota-fuente code { font-family: var(--mono); background: #e9e2cf; padding: 1px 5px; border-radius: 4px; }
+
+  /* ---- Kit de collage ---- */
+  .kit { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+  .kit .cell { border: 1px dashed var(--tinta); border-radius: 12px; padding: 16px; min-height: 150px; position: relative; display: grid; place-items: center; background: var(--papel); overflow: hidden; }
+  .kit .cap { position: absolute; left: 10px; bottom: 8px; font: 700 10px/1 var(--mono); text-transform: uppercase; letter-spacing: .06em; color: #555; }
+
+  /* letras recortadas (ransom) */
+  .ransom { display: flex; gap: 2px; }
+  .ransom span {
+    font-family: var(--display); font-weight: 900; font-size: 34px; line-height: 1;
+    padding: 4px 7px; color: var(--tinta); display: inline-block;
+  }
+  .ransom span:nth-child(1){ background: var(--amarillo); transform: rotate(-5deg); }
+  .ransom span:nth-child(2){ background: var(--azul); color: var(--papel); transform: rotate(3deg); }
+  .ransom span:nth-child(3){ background: var(--papel); border: 2px solid var(--tinta); transform: rotate(-2deg); }
+  .ransom span:nth-child(4){ background: var(--magenta); color: var(--papel); transform: rotate(4deg); }
+  .ransom span:nth-child(5){ background: var(--lima); transform: rotate(-4deg); }
+
+  /* cinta */
+  .tape { position: absolute; width: 96px; height: 30px; background: rgba(245,215,0,.55);
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); transform: rotate(-8deg); }
+  .tape.azul { background: rgba(39,77,234,.35); }
+
+  /* estallido / estrella svg */
+  .burst-mini { width: 96px; height: 96px; }
+
+  /* foto slot */
+  .slot { width: 100%; height: 100px; background:
+      repeating-linear-gradient(45deg, #d9d2bf 0 10px, #efe8d4 10px 20px);
+    border-radius: 8px; display: grid; place-items: center; }
+  .slot span { font: 700 11px var(--mono); text-transform: uppercase; color: #6a6450; letter-spacing: .06em; }
+
+  footer { margin: 56px 0 24px; font: 400 13px/1.5 var(--mono); color: #6a6450; text-align: center; }
+
+  @media (max-width: 640px) {
+    .hero { grid-template-columns: 1fr; text-align: left; }
+    .hero .marca-iso { width: 120px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ======================= DEFINICIÓN REUTILIZABLE DEL ISOTIPO ======================= -->
+<!-- Cururo (cola corta, cuerpo redondo, dientes) sosteniendo una estrella de 6 puntas (candelabro).
+     [data-ink] = trazo/cuerpo · [data-paper] = negativo. Recoloreable por contexto. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="cururo">
+      <!-- cuerpo -->
+      <path data-ink d="M120 214c-42 0-70-26-70-66 0-44 28-80 70-80s70 36 70 80c0 40-28 66-70 66z"/>
+      <!-- oreja -->
+      <circle data-ink cx="90" cy="86" r="15"/>
+      <circle data-ink cx="146" cy="82" r="12"/>
+      <!-- cola corta y fina (NO paleta de castor) -->
+      <path data-ink d="M184 190c22 2 30 16 24 34-4 12-18 14-26 6" fill="none" stroke="currentColor"/>
+      <!-- ojo -->
+      <circle data-paper cx="103" cy="120" r="11"/>
+      <circle data-ink cx="106" cy="122" r="5"/>
+      <!-- hocico + dientes naranjas (rasgo del cururo) -->
+      <ellipse data-paper cx="86" cy="140" rx="12" ry="9"/>
+      <rect data-ink x="80" y="145" width="12" height="15" rx="3"/>
+      <!-- estrella de 6 puntas sostenida en la panza -->
+      <path data-paper stroke="currentColor"
+        d="M120 132 L129 155 L153 151 L137 170 L153 189 L129 185 L120 208 L111 185 L87 189 L103 170 L87 151 L111 155 Z"/>
+      <!-- patitas que la abrazan -->
+      <ellipse data-ink cx="96" cy="158" rx="10" ry="7"/>
+      <ellipse data-ink cx="150" cy="155" rx="10" ry="7"/>
+    </g>
+  </defs>
+</svg>
+
+<div class="wrap">
+
+  <!-- ======================= PORTADA ======================= -->
+  <header class="hero">
+    <svg class="burst" viewBox="0 0 100 100" fill="var(--amarillo)" aria-hidden="true">
+      <path d="M50 0l9 28 20-22-8 28 29-5-25 16 25 16-29-5 8 28-20-22-9 28-9-28-20 22 8-28-29 5 25-16-25-16 29 5-8-28 20 22z"/>
+    </svg>
+    <div>
+      <div class="k">@listaconstruir.cedig · núcleo de identidad</div>
+      <h1>LISTA<br>CONS<em>TRU</em>IR</h1>
+      <p class="sub">Fuente de verdad para la plataforma: color, tipografía, isotipo y kit de collage. Estos tokens alimentan <b>pieza.html</b> y <b>taller.html</b>.</p>
+    </div>
+    <svg class="marca-iso" viewBox="0 0 240 240" style="color:var(--papel)" aria-label="Isotipo Lista Construir">
+      <use href="#cururo"/>
+    </svg>
+  </header>
+
+  <!-- ======================= ISOTIPO ======================= -->
+  <section>
+    <span class="eyebrow">01 · Isotipo</span>
+    <h2 class="tit">El cururo que arma la estrella</h2>
+    <p class="lede">Dos elementos, nada más: el cururo (constructor) sosteniendo una estrella de 6 puntas (guiño a la de candelabro, que esquiva el cliché de estrella política). Vector de un solo color, pensado como <b>sello</b>.</p>
+
+    <div class="iso-grid">
+      <div class="iso-card"><svg viewBox="0 0 240 240" width="120" height="120" style="color:var(--tinta)"><use href="#cururo"/></svg><span class="cap">tinta / sobre papel</span></div>
+      <div class="iso-card azul"><svg viewBox="0 0 240 240" width="120" height="120" style="color:var(--papel)"><use href="#cururo"/></svg><span class="cap">papel / sobre azul</span></div>
+      <div class="iso-card tinta"><svg viewBox="0 0 240 240" width="120" height="120" style="color:var(--papel)"><use href="#cururo"/></svg><span class="cap">invertido</span></div>
+      <div class="iso-card">
+        <div class="iso-32">
+          <div class="chip"><div class="pfp"><svg viewBox="40 40 170 180" width="40" height="40"><use href="#cururo"/></svg></div>56 px</div>
+          <div class="chip"><div class="pfp s32"><svg viewBox="40 40 170 180" width="22" height="22"><use href="#cururo"/></svg></div>32 px</div>
+        </div>
+        <span class="cap">prueba de tamaño chico</span>
+      </div>
+    </div>
+
+    <div class="regla"><b>congelado</b><span>El isotipo es un archivo fijo. No se redibuja para cada post — se usa tal cual. Esto evita los cinco cururos distintos.</span></div>
+    <div class="regla"><b>isotipo ≠ mascota</b><span>Este sello es canónico. La <b>mascota</b> (el cururo suelto que posa, cambia de expresión y se ilustra libre) es su versión expresiva para los posts. Mismo bicho, dos registros.</span></div>
+    <div class="regla"><b>v1 · por refinar</b><span>Este vector es un punto de partida sobre tus bocetos, no el final. Sobre tu dibujo: cuerpo redondo, cola corta y fina, dientes a la vista — <b>cururo, no castor</b>.</span></div>
+  </section>
+
+  <!-- ======================= PALETA ======================= -->
+  <section>
+    <span class="eyebrow">02 · Paleta</span>
+    <h2 class="tit">Azul de base, dos acentos</h2>
+    <p class="lede">Los colores del moodboard, con <b>roles fijos</b>. La regla es la que mantiene el collage lejos del caos cuando lo produce cualquiera.</p>
+
+    <div class="paleta">
+      <div class="sw"><div class="chip" style="background:var(--azul)"></div><div class="meta"><div class="rol" style="color:var(--azul)">Base</div><div class="nom">Azul</div><div class="hex">#274DEA</div><div class="uso">Fondo dominante, la firma del feed.</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--papel); box-shadow: inset 0 0 0 1px rgba(0,0,0,.1)"></div><div class="meta"><div class="rol" style="color:#b08900">Papel</div><div class="nom">Crema</div><div class="hex">#F7F2E0</div><div class="uso">Fondo claro alterno, recortes.</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--tinta)"></div><div class="meta"><div class="rol" style="color:var(--tinta)">Tinta</div><div class="nom">Casi negro</div><div class="hex">#10131A</div><div class="uso">Texto y trazo del isotipo.</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--amarillo)"></div><div class="meta"><div class="rol" style="color:#b08900">Acento 1</div><div class="nom">Amarillo</div><div class="hex">#F5D700</div><div class="uso">Destacar, letras recortadas.</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--magenta)"></div><div class="meta"><div class="rol" style="color:var(--magenta)">Acento 2</div><div class="nom">Magenta</div><div class="hex">#8C0041</div><div class="uso">Alertas, segundo acento.</div></div></div>
+      <div class="sw"><div class="chip" style="background:var(--lima)"></div><div class="meta"><div class="rol" style="color:#5f7500">Pop</div><div class="nom">Lima</div><div class="hex">#97BA0B</div><div class="uso">Solo estallidos / estrella.</div></div></div>
+    </div>
+
+    <div class="regla"><b>máx. 2 acentos</b><span>Por pieza: base (azul o crema) + hasta dos acentos. Tres saturados sueltos = caos. La plataforma solo deja elegir entre estos tokens.</span></div>
+  </section>
+
+  <!-- ======================= TIPOGRAFÍA ======================= -->
+  <section>
+    <span class="eyebrow">03 · Tipografía</span>
+    <h2 class="tit">Titular grueso, cuerpo claro, dato en mono</h2>
+    <p class="lede">Tres roles, sin mezclar. Mon Trappist manda en los títulos; Archivo carga la info; Space Mono hace las etiquetas tipo-dato (y amarra con rastro).</p>
+
+    <div class="spec">
+      <div class="row">
+        <div class="lbl">Titular · Mon Trappist (stand-in: Anton)</div>
+        <div class="display-xl">CONSTRUIR<br>LA ESCUELA</div>
+        <div class="nota-fuente">Mon Trappist viene en archivo, no en Google Fonts. Dejá <code>MonTrappist.woff2</code> en <code>./fuentes/</code> y reemplaza al stand-in solo. Un solo peso: por eso no lleva cuerpos ni jerarquía fina.</div>
+      </div>
+      <div class="row">
+        <div class="lbl">Cuerpo · Archivo</div>
+        <p class="cuerpo">Postula a tu centro de estudiantes. <b>Lista Construir</b> es una lista independiente de la Escuela de Diseño UDP: ideas concretas, cero relleno. Archivo lleva fechas, bajadas y textos largos con buena legibilidad y varios pesos.</p>
+      </div>
+      <div class="row">
+        <div class="lbl">Dato / etiqueta · Space Mono</div>
+        <div>
+          <span class="tag">ELECCIONES · 2026</span>
+          <span class="tag" style="background:var(--azul);color:var(--papel)">LINK EN LA BIO</span>
+          <span class="tag" style="background:var(--magenta);color:var(--papel)">/5 · CARRUSEL</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= KIT DE COLLAGE ======================= -->
+  <section>
+    <span class="eyebrow">04 · Kit de collage</span>
+    <h2 class="tit">La capa suelta, con piezas fijas</h2>
+    <p class="lede">El collage se mantiene coherente porque el set es <b>cerrado</b>: estas piezas, no otras. La capa estable (tipografía + grilla + isotipo) ordena; esta capa da la soltura.</p>
+
+    <div class="kit">
+      <div class="cell"><div class="ransom"><span>C</span><span>U</span><span>R</span><span>U</span><span>R</span></div><span class="cap">letras recortadas</span></div>
+      <div class="cell">
+        <div class="tape" style="top:20px;left:24px"></div>
+        <div class="tape azul" style="bottom:28px;right:18px;transform:rotate(6deg)"></div>
+        <span class="cap">cinta</span>
+      </div>
+      <div class="cell">
+        <svg class="burst-mini" viewBox="0 0 100 100" fill="var(--lima)"><path d="M50 0l9 28 20-22-8 28 29-5-25 16 25 16-29-5 8 28-20-22-9 28-9-28-20 22 8-28-29 5 25-16-25-16 29 5-8-28 20 22z"/></svg>
+        <span class="cap">estallido</span>
+      </div>
+      <div class="cell">
+        <svg width="80" height="80" viewBox="0 0 240 240" style="color:var(--magenta)"><use href="#cururo"/></svg>
+        <span class="cap">isotipo / sticker</span>
+      </div>
+      <div class="cell"><div class="slot"><span>foto recortada</span></div><span class="cap">slot de imagen (lo llena la lista)</span></div>
+      <div class="cell" style="background:var(--azul)">
+        <span style="font:400 13px/1.5 var(--mono);color:var(--papel);opacity:.85;text-align:center">grano de papel<br>+ fondo plano</span>
+        <span class="cap" style="color:rgba(247,242,224,.7)">textura base</span>
+      </div>
+    </div>
+
+    <div class="regla"><b>dos capas</b><span>Estable (tipografía + grilla + isotipo) = la consistencia. Expresiva (este kit) = el gancho. Nunca al revés: el collage no pisa la info.</span></div>
+  </section>
+
+  <footer>
+    Lista Construir · núcleo de identidad v1 · siguiente: pieza.html (renderer) + taller.html (estudio)
+  </footer>
+
+</div>
+</body>
+</html>
