@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Construir · plataforma de identidad</title>
+<!-- Landing de la plataforma de Lista Construir. Es lo que sirve GitHub Pages. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700;800&display=swap">
+<style>
+  :root { --azul:#2340E8; --papel:#F3EAD3; --tinta:#14151c; --amarillo:#FFD400; --magenta:#9C0048; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; }
+  body { min-height:100vh; background:var(--azul); color:var(--papel);
+    font-family:"Archivo",system-ui,sans-serif; display:grid; place-items:center; padding:32px;
+    background-image: radial-gradient(rgba(16,19,26,.35) 20%, transparent 21%); background-size:24px 24px; }
+  .caja { width:min(640px,100%); }
+  .wip { display:inline-block; background:var(--amarillo); color:var(--tinta); font-weight:800; text-transform:uppercase;
+    font-size:13px; letter-spacing:.04em; padding:7px 13px; transform:rotate(-1.5deg); margin-bottom:22px; }
+  h1 { font-family:"Archivo Black",sans-serif; font-weight:400; text-transform:uppercase; line-height:.86;
+    font-size:clamp(56px,13vw,132px); margin:0; letter-spacing:-.01em; }
+  h1 em { font-style:normal; color:var(--amarillo); }
+  .bajada { font-size:17px; font-weight:600; max-width:46ch; margin:16px 0 4px; line-height:1.4; }
+  .nota { font-size:14px; line-height:1.5; opacity:.9; max-width:52ch; margin:14px 0 28px;
+    border-left:3px solid var(--amarillo); padding-left:14px; }
+  .acciones { display:flex; flex-wrap:wrap; gap:12px; }
+  a.btn { text-decoration:none; font-weight:800; text-transform:uppercase; letter-spacing:.02em; font-size:15px;
+    padding:14px 22px; border-radius:2px; display:inline-flex; align-items:center; gap:8px; }
+  a.primario { background:var(--papel); color:var(--tinta); }
+  a.primario:hover { background:var(--amarillo); }
+  a.secundario { background:transparent; color:var(--papel); box-shadow:inset 0 0 0 2px var(--papel); }
+  a.secundario:hover { background:var(--papel); color:var(--tinta); }
+  .pie { margin-top:34px; font-size:13px; font-weight:700; letter-spacing:.02em; opacity:.85; }
+  .pie span { color:var(--amarillo); }
+</style>
+</head>
+<body>
+  <div class="caja">
+    <span class="wip">🚧 Herramienta en desarrollo</span>
+    <h1>CONS<em>TRU</em>IR</h1>
+    <p class="bajada">Plataforma para que Lista Construir produzca sus posts manteniendo la identidad visual.</p>
+    <p class="nota">Esto es un <strong>trabajo en curso</strong>: está en construcción activa, puede fallar o cambiar
+      de un día para otro, y todavía le faltan cosas. Se ve mejor en computador. No es una versión final.</p>
+    <div class="acciones">
+      <a class="btn primario" href="taller.html">Abrir el taller →</a>
+      <a class="btn secundario" href="identidad.html">Ver la identidad →</a>
+    </div>
+    <p class="pie"><span>@listaconstruir.cedig</span> · Escuela de Diseño UDP</p>
+  </div>
+</body>
+</html>

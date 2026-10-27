@@ -4,6 +4,10 @@ editor paramétrico para que **Lista Construir** ([@listaconstruir.cedig](https:
 
 mismo esquema que el estudio de [rastro](https://github.com/emiguerra/2026-rastro-metadatos): una página de edición maneja un *renderer* por la URL y lo muestra en vivo; lo que ves se exporta a PNG o PDF. la identidad (collage, letras recortadas, color, tratamiento de imagen) está horneada en la herramienta, así que quien hace un post elige texto, formato e imágenes, y el sistema mantiene la coherencia.
 
+> 🚧 **en desarrollo.** esto es un trabajo en curso: está en construcción activa, puede fallar o cambiar de un día para otro, y le faltan cosas (una sola lógica de composición, isotipo pausado, controles que todavía se mueven). no es una versión final.
+
+**online:** https://emiguerra.github.io/construir-plataforma/ (abrir el taller desde ahí; en GitHub Pages funciona porque es un servidor real).
+
 | pieza | archivo | qué hace |
 | --- | --- | --- |
 | editor | [taller.html](taller.html) | la herramienta: panel de controles, vista en vivo, banco de imágenes y exportación. es lo que se abre para trabajar |

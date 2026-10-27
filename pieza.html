@@ -5,19 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pieza · Lista Construir</title>
 <!--
-  RENDERER de Lista Construir — composición "editorial collage".
-  Figura/fondo (papel + panel de color), jerarquía tipográfica (palabra gigante + resto chico),
-  imagen integrada detrás del titular, color modulado (papel + trama + sobreimpresión riso).
-  Dos tratamientos de imagen: duotono (serigrafía) y sticker (sin fondo).
-  Driven por URL. taller.html lo controla en un iframe.
+  RENDERER de Lista Construir — composición EDITORIAL: la grilla manda, el usuario pone contenido.
+  Márgenes consistentes · zona de imagen definida (con bloque riso detrás) · título protagonista
+  que llena el ancho · línea de créditos alineada abajo · color restringido · texturas crocantes.
+  Dos tratamientos: duotono (serigrafía) y sticker (sin fondo).
   Contrato: window.piezaLista · window.setFondo(bool) · nodo .pieza.activa
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Archivo:wght@400;500;600;700;800;900&family=Syne:wght@700;800&family=Bricolage+Grotesque:wght@700;800&display=swap">
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=cabinet-grotesk@700,800&display=swap">
 <style>
   :root {
-    --azul:#274DEA; --azul-s:#1a35b8; --papel:#F4ECD8; --papel2:#EADFC4; --tinta:#14151c; --amarillo:#F5D700; --magenta:#8C0041; --lima:#97BA0B; --blanco:#fbfaf3;
+    --azul:#2340E8; --azul-s:#15299e; --papel:#F3EAD3; --tinta:#14151c; --amarillo:#FFD400; --magenta:#9C0048; --lima:#9ABF1F; --blanco:#FCFBF4;
     --display:"Archivo Black","Archivo",system-ui,sans-serif;
     --texto:"Archivo",system-ui,sans-serif;
     color-scheme: light;
@@ -29,74 +29,101 @@
   body.incrustado .barra { display:none; }
   body:not(.incrustado) .escena { padding-top:64px; }
 
-  .pieza { position:relative; overflow:hidden; font-family:var(--texto); isolation:isolate; --pad: calc(var(--u)*6.5); }
+  .pieza { position:relative; overflow:hidden; font-family:var(--texto); isolation:isolate;
+    --m: calc(var(--u)*6); --ro: calc(var(--u)*1.5);
+    --fg: var(--tinta); --bg: var(--papel); --panel: var(--azul); --onpanel: var(--papel); }
+  .pieza.inv { --fg: var(--papel); --bg: var(--azul); --panel: var(--papel); --onpanel: var(--tinta); }
   .lienzo { position:absolute; inset:0; overflow:hidden; }
 
-  /* ---- fondo de papel ---- */
-  .fondo { position:absolute; inset:0; z-index:0; background:var(--papel); }
-  .pieza.inv .fondo { background:var(--azul); }
-  .pieza.sin-fondo .fondo { background:transparent !important; }
-  .tex-papel { position:absolute; inset:0; mix-blend-mode:multiply; opacity:.5;
-    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><filter id='c'><feTurbulence type='fractalNoise' baseFrequency='0.01' numOctaves='3' seed='7'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23c)'/></svg>");
-    background-size: calc(var(--u)*110); }
-  .tex-grano { position:absolute; inset:0; mix-blend-mode:multiply; opacity:.10;
+  .fondo { position:absolute; inset:0; z-index:0; background:var(--bg); }
+  .pieza.sin-fondo .fondo { background:transparent; }
+  /* papel: grano fino, no barro */
+  .tex-papel { position:absolute; inset:0; mix-blend-mode:multiply; opacity:.35;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='c'><feTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='3' seed='7'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23c)'/></svg>");
+    background-size: calc(var(--u)*26); }
+  .tex-grano { position:absolute; inset:0; mix-blend-mode:multiply;
     background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
-    background-size: calc(var(--u)*12); }
-  .pieza.sin-fondo .tex-papel, .pieza.sin-fondo .tex-grano { display:none; }
+    background-size: calc(var(--u)*11); }
+  /* trama de medios tonos sobre el campo: fuerte en azul, apenas en crema */
+  .tex-trama { position:absolute; inset:0; mix-blend-mode:multiply; opacity:.14;
+    background-image: radial-gradient(var(--tinta) 20%, transparent 21%); background-size: calc(var(--u)*2.4) calc(var(--u)*2.4); }
+  .pieza.inv .tex-trama { opacity:.4; }
+  .pieza.sin-fondo .tex-papel, .pieza.sin-fondo .tex-grano, .pieza.sin-fondo .tex-trama { display:none; }
 
-  /* ---- panel de color (bloque que organiza) ---- */
-  .panel { position:absolute; z-index:1; background:var(--azul); }
-  .pieza.inv .panel { background:var(--papel); }
-  .panel .pint { position:absolute; inset:0; }
-  .panel .pint.trama { mix-blend-mode:multiply; opacity:.5;
-    background-image: radial-gradient(var(--tinta) 21%, transparent 22%);
-    background-size: calc(var(--u)*2.4) calc(var(--u)*2.4); }
-  .panel::before { content:""; position:absolute; inset:0; background:var(--magenta); mix-blend-mode:multiply; opacity:.3;
-    transform: translate(calc(var(--u)*-0.9), calc(var(--u)*0.7)); z-index:-1; }  /* fantasma riso corrido */
+  /* ---- campo de color roto por una trama (no plano) ---- */
+  .campo { position:absolute; inset:0; z-index:1; background:var(--panel); }
+  .campo::after { content:""; position:absolute; inset:0; mix-blend-mode:multiply; opacity:.4;
+    background-image: radial-gradient(var(--tinta) 20%, transparent 21%); background-size: calc(var(--u)*2.4) calc(var(--u)*2.4); }
+  .pieza.sin-fondo .campo { display:none; }
 
-  /* posición del panel por formato */
-  .pieza[data-formato="feed"] .panel,
-  .pieza[data-formato="historia"] .panel { top:-5%; bottom:-5%; right:-7%; width:62%; transform:rotate(-2.2deg); }
-  .pieza[data-formato="wide"] .panel { top:-6%; bottom:-6%; right:-5%; width:52%; transform:rotate(-1.5deg); }
+  /* ---- hero: recorte a silueta, grande, sangra y pisa el título ---- */
+  .hero { position:absolute; z-index:2; }
+  .hero canvas, .hero img { width:100%; height:auto; display:block;
+    filter: drop-shadow(calc(var(--u)*.7) calc(var(--u)*.9) calc(var(--u)*1.1) rgba(16,19,26,.45)); }
+  .hero .caja { aspect-ratio:1; display:grid; place-items:center; background:repeating-linear-gradient(45deg,#d9d2bf 0 calc(var(--u)*2), #efe8d4 calc(var(--u)*2) calc(var(--u)*4)); }
+  .hero .caja span { font-family:var(--texto); font-weight:800; font-size: calc(var(--u)*2.2); text-transform:uppercase; color:#7a7360; letter-spacing:.06em; }
 
-  /* ---- imágenes (recortes) ---- */
-  .recorte { position:absolute; z-index:2; }
-  .recorte .marco { background:var(--blanco); padding: calc(var(--u)*1); filter: drop-shadow(calc(var(--u)*.6) calc(var(--u)*.8) calc(var(--u)*1.1) rgba(16,19,26,.4)); }
-  .recorte .marco > canvas, .recorte .marco > img, .recorte .marco > .caja { display:block; width:100%; height:auto; }
-  .recorte.sticker > canvas, .recorte.sticker > img, .recorte.sticker > .caja { display:block; width:100%; height:auto;
-    filter: drop-shadow(calc(var(--u)*.5) calc(var(--u)*.7) calc(var(--u)*.9) rgba(16,19,26,.45)); }
-  .caja { aspect-ratio:4/5; display:grid; place-items:center; background:repeating-linear-gradient(45deg,#d9d2bf 0 calc(var(--u)*2), #efe8d4 calc(var(--u)*2) calc(var(--u)*4)); }
-  .caja span { font-family:var(--texto); font-weight:700; font-size: calc(var(--u)*2.2); text-transform:uppercase; color:#7a7360; letter-spacing:.06em; }
+  /* ---- sticker accent (deliberado, opcional) ---- */
+  .sticker-acc { position:absolute; z-index:3; }
+  .sticker-acc canvas, .sticker-acc img { width:100%; height:auto; display:block; filter: drop-shadow(calc(var(--u)*.5) calc(var(--u)*.7) calc(var(--u)*.8) rgba(16,19,26,.4)); }
 
-  /* ---- capa de texto (encima de todo) ---- */
-  .capa { position:absolute; inset:0; z-index:3; padding:var(--pad); }
-  .tag { position:absolute; top:var(--pad); left:var(--pad); font-family:var(--texto); font-weight:800; font-size: calc(var(--u)*2.5);
-    letter-spacing:.02em; text-transform:uppercase; background:var(--amarillo); color:var(--tinta);
-    padding: calc(var(--u)*1) calc(var(--u)*1.7); transform:rotate(-2deg); box-shadow: calc(var(--u)*.3) calc(var(--u)*.4) 0 rgba(16,19,26,.25); }
-
-  .titulo { position:absolute; left:var(--pad); z-index:4; display:flex; flex-direction:column; gap: calc(var(--u)*0.6); }
-  .pieza[data-formato="feed"] .titulo, .pieza[data-formato="historia"] .titulo { bottom: calc(var(--u)*26); right: calc(var(--u)*4); }
-  .pieza[data-formato="wide"] .titulo { bottom: calc(var(--u)*20); right:46%; }
+  /* ---- título (protagonista, alineado al margen, ritmo controlado) ---- */
+  .titulo { position:absolute; left:var(--m); z-index:4; }
   .reng { display:flex; flex-wrap:wrap; }
-  .reng.chico { gap: calc(var(--u)*0.6); margin-bottom: calc(var(--u)*0.8); }
-  .palabra { display:inline-flex; }
-  .reng.grande .palabra { gap: calc(var(--u)*0.5); }
-  .reng.chico .palabra { gap: calc(var(--u)*0.4); margin-right: calc(var(--u)*1.4); }
-
-  .chip { position:relative; font-family:var(--display); font-weight:400; text-transform:uppercase; line-height:.8; display:inline-block;
-    box-shadow: calc(var(--u)*.35) calc(var(--u)*.5) 0 rgba(16,19,26,.22); }
-  .chip::after { content:""; position:absolute; inset:0; mix-blend-mode:multiply; opacity:.15; pointer-events:none;
+  .reng.l1 { align-items:flex-end; }
+  .reng.l2 { margin-top: calc(var(--u)*0.8); }
+  .palabra { display:inline-flex; margin-right: calc(var(--u)*1.6); }
+  .reng.l1 .palabra { gap: calc(var(--u)*0.45); }
+  .reng.l2 .palabra { gap: calc(var(--u)*0.35); margin-right: calc(var(--u)*1.2); }
+  .chip { position:relative; font-family:var(--display); text-transform:uppercase; line-height:.78; display:inline-block;
+    box-shadow: calc(var(--u)*.3) calc(var(--u)*.42) 0 rgba(16,19,26,.28); }
+  .chip::after { content:""; position:absolute; inset:0; mix-blend-mode:multiply; opacity:.13; pointer-events:none;
     background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='90' height='90'><filter id='p'><feTurbulence type='fractalNoise' baseFrequency='0.5' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23p)'/></svg>");
     background-size: calc(var(--u)*5); }
-  .reng.grande .chip { font-size: calc(var(--u)*15*var(--tf,1)); padding: calc(var(--u)*.3) calc(var(--u)*1.1); }
-  .reng.chico .chip  { font-size: calc(var(--u)*5); padding: calc(var(--u)*.3) calc(var(--u)*.8); box-shadow: calc(var(--u)*.25) calc(var(--u)*.35) 0 rgba(16,19,26,.22); }
+  .reng.l1 .chip { font-size: calc(var(--u)*16*var(--tf,1)); padding: calc(var(--u)*.22) calc(var(--u)*1.05); }
+  .reng.l2 .chip { font-size: calc(var(--u)*6*var(--tf2,1)); padding: calc(var(--u)*.22) calc(var(--u)*.78); }
 
-  .pie { position:absolute; left:var(--pad); bottom:var(--pad); right:var(--pad); display:flex; justify-content:space-between; align-items:flex-end; gap: calc(var(--u)*3); z-index:4; }
-  .info { font-family:var(--texto); font-weight:600; font-size: calc(var(--u)*2.7); line-height:1.25; max-width:26ch; margin:0; color:var(--tinta); }
-  .pieza.inv .info { color:var(--papel); }
-  .handle { font-family:var(--texto); font-weight:800; font-size: calc(var(--u)*2.4); letter-spacing:.02em; white-space:nowrap;
-    background:var(--papel); color:var(--tinta); padding: calc(var(--u)*.7) calc(var(--u)*1.3); transform:rotate(-1.5deg); }
-  .pieza.inv .handle { background:var(--tinta); color:var(--papel); }
+  /* título SÓLIDO (tipo póster, no recortado) */
+  .titulo.solido .reng { display:block; }
+  /* título sólido "WAKE UP": ancho + relleno de papel arrugado + borde áspero */
+  .titulo.solido .l1, .titulo.solido .l2 {
+    font-family: var(--solfont); font-weight: var(--solweight,900); line-height:.84;
+    color: transparent; -webkit-text-fill-color: transparent;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='400' height='400'><filter id='w'><feTurbulence type='fractalNoise' baseFrequency='0.02' numOctaves='3' seed='6' result='n'/><feDiffuseLighting in='n' lighting-color='%23ffffff' surfaceScale='2.4'><feDistantLight azimuth='235' elevation='62'/></feDiffuseLighting></filter><rect width='100%25' height='100%25' filter='url(%23w)'/></svg>");
+    background-size: calc(var(--u)*44);
+    -webkit-background-clip: text; background-clip: text;
+    filter: url(#aspero) drop-shadow(calc(var(--u)*.5) calc(var(--u)*.6) 0 rgba(16,19,26,.32));
+    transform: scaleX(1.03); transform-origin: left center; width: fit-content;
+  }
+  .titulo.solido .l1 { font-size: calc(var(--u)*18*var(--tf,1)); letter-spacing:-.012em; }
+  .titulo.solido .l2 { font-size: calc(var(--u)*8*var(--tf2,1)); letter-spacing:-.006em; margin-top: calc(var(--u)*0.3); }
+  /* sobre campo crema el papel blanco no se ve: letras en tinta */
+  .pieza:not(.inv) .titulo.solido .l1, .pieza:not(.inv) .titulo.solido .l2 {
+    background-image:none; color:var(--tinta); -webkit-text-fill-color:var(--tinta); }
+
+  /* ---- créditos (línea alineada abajo) ---- */
+  .meta { position:absolute; left:var(--m); right:var(--m); bottom:var(--m); z-index:4;
+    display:flex; justify-content:space-between; align-items:flex-start; gap: calc(var(--u)*2);
+    border-top: calc(var(--u)*.45) solid var(--fg); padding-top: calc(var(--u)*1.6); }
+  .meta .izq { font-family:var(--texto); font-weight:800; font-size: calc(var(--u)*2.6); line-height:1.25; color:var(--fg); max-width: 30ch; text-transform:uppercase; letter-spacing:.01em; }
+  .meta .der { font-family:var(--texto); font-weight:800; font-size: calc(var(--u)*2.5); color:var(--fg); white-space:nowrap; letter-spacing:.01em; }
+  .tag-fecha { display:inline-block; background:var(--amarillo); color:var(--tinta); font-weight:800; text-transform:uppercase;
+    padding: calc(var(--u)*.5) calc(var(--u)*1.1); margin-bottom: calc(var(--u)*1); letter-spacing:.02em; transform:rotate(-1.5deg); }
+
+  /* ======== GRILLA POR FORMATO ======== */
+  /* feed / historia: recorte grande arriba-derecha que sangra, título abajo pisándolo */
+  .pieza[data-formato="feed"] .hero { top: calc(var(--u)*-2); right: calc(var(--u)*-4); width:58%; }
+  .pieza[data-formato="feed"] .titulo { left:var(--m); right:var(--m); bottom: calc(var(--u)*20); }
+  .pieza[data-formato="historia"] .hero { top: calc(var(--u)*7); right: calc(var(--u)*-4); width:66%; }
+  .pieza[data-formato="historia"] .titulo { left:var(--m); right:var(--m); bottom: calc(var(--u)*24); }
+  .pieza[data-formato="feed"] .sticker-acc,
+  .pieza[data-formato="historia"] .sticker-acc { width:22%; left: calc(var(--u)*2); top: calc(var(--u)*7); }
+
+  /* 16:9: recorte a la derecha que sangra, título a la izquierda */
+  .pieza[data-formato="wide"] .hero { top: calc(var(--u)*-5); right: calc(var(--u)*-3); width:50%; }
+  .pieza[data-formato="wide"] .titulo { left:var(--m); right:50%; top: calc(var(--u)*13); }
+  .pieza[data-formato="wide"] .meta { right:50%; }
+  .pieza[data-formato="wide"] .sticker-acc { width:16%; left:43%; top: calc(var(--u)*9); }
 
   .barra { position:fixed; z-index:99; inset:0 0 auto 0; display:flex; gap:8px; flex-wrap:wrap; align-items:center;
     padding:9px 14px; background:#15151a; border-bottom:1px solid #2a2a30; font:700 12px/1 var(--texto); color:#e8e8e2; }
@@ -108,6 +135,10 @@
 </style>
 </head>
 <body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <filter id="aspero"><feTurbulence type="fractalNoise" baseFrequency="0.028 0.04" numOctaves="2" seed="5" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="4"/></filter>
+</defs></svg>
 
 <div class="barra" id="barra">
   <span class="et">pieza · prueba</span>
@@ -125,18 +156,17 @@
     wide:     { w:1920, h:1080, et:'16:9' },
   };
   const DEF = {
-    formato:'feed', base:'crema', fondo:'1', grano:'10',
-    titulo:'DESPIERTA\nla escuela', acento:'amarillo', mayus:'mantener',
-    info:'Centro de estudiantes · Escuela de Diseño UDP', mostrar_info:'1',
-    etiqueta:'elecciones 2026', handle:'@listaconstruir.cedig',
+    formato:'feed', base:'azul', fondo:'1', grano:'9',
+    titulo:'ASAMBLEA\nabierta', acento:'amarillo', titstyle:'solido', titfont:'archivo',
+    info:'Ven a proponer ideas para la escuela', fecha:'jueves 18h', handle:'@listaconstruir.cedig',
     trama:'5',
-    img1:'', img1_x:'40', img1_y:'16', img1_tam:'52', img1_giro:'-3', img1_duo:'azul', img1_trat:'duotono', slot1:'1',
-    img2:'', img2_x:'2', img2_y:'18', img2_tam:'22', img2_giro:'6', img2_duo:'magenta', img2_trat:'sticker', slot2:'0',
+    img1:'', img1_duo:'azul', img1_trat:'duotono', slot1:'1',
+    img2:'', img2_duo:'magenta', img2_trat:'sticker', slot2:'0',
   };
   const VAR  = { amarillo:'var(--amarillo)', magenta:'var(--magenta)', azul:'var(--azul)', lima:'var(--lima)', papel:'var(--papel)', tinta:'var(--tinta)', blanco:'var(--blanco)' };
   const CLARAS = ['amarillo','papel','lima','blanco'];
-  const RGB  = { amarillo:[245,215,0], magenta:[140,0,65], azul:[39,77,234], tinta:[20,21,28], lima:[151,186,11], papel:[244,236,216] };
-  const PAPER = [244,236,216], NEGRO = [20,21,28];
+  const RGB  = { amarillo:[255,212,0], magenta:[156,0,72], azul:[35,64,232], tinta:[20,21,28], lima:[154,191,31], papel:[243,234,211] };
+  const PAPER = [243,234,211], NEGRO = [20,21,28];
 
   const incrustado = window.top !== window.self;
   document.body.classList.toggle('incrustado', incrustado);
@@ -144,58 +174,64 @@
   const val = k => qs.has(k) ? qs.get(k) : DEF[k];
   const on  = k => { const v = val(k); return v === '1' || v === 'true'; };
   const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  const casofn = t => { const m = val('mayus'); return m==='mayus'?t.toUpperCase():m==='minus'?t.toLowerCase():t; };
 
   function idbOpen(){ return new Promise((res,rej)=>{ const r=indexedDB.open('construir-fotos',1); r.onupgradeneeded=()=>r.result.createObjectStore('f'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
   async function idbGet(key){ const db=await idbOpen(); return new Promise((res,rej)=>{ const t=db.transaction('f','readonly'); const rq=t.objectStore('f').get(key); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>rej(rq.error); }); }
   async function resolverSrc(v){ if(!v) return null; if(v.startsWith('idb:')){ const rec=await idbGet(v.slice(4)); if(!rec) return null; return URL.createObjectURL(rec instanceof Blob ? rec : rec.blob); } return v; }
 
-  function dentado(seed, n=22, jit=3.2) {
+  function dentado(seed, n=12, jit=2.2) {
     let s = seed; const rnd = () => { s=(s*9301+49297)%233280; return s/233280; };
     const pts=[]; const edge=(fx,fy,tx,ty)=>{ for(let i=0;i<n;i++){ const t=i/n; pts.push([fx+(tx-fx)*t+(rnd()-.5)*jit, fy+(ty-fy)*t+(rnd()-.5)*jit]); } };
     edge(0,0,100,0); edge(100,0,100,100); edge(100,100,0,100); edge(0,100,0,0);
     return 'polygon(' + pts.map(p=>`${p[0].toFixed(1)}% ${p[1].toFixed(1)}%`).join(',') + ')';
   }
-  const CLIPS = [3,19,41,67,89,113].map(s => dentado(s, 10, 2.4));
-  const parLetra = name => ({ bg: VAR[name] || 'var(--amarillo)', fg: CLARAS.includes(name) ? 'var(--tinta)' : 'var(--papel)' });
+  const CLIPS = [3,19,41,67,89,113].map(s => dentado(s));
+  const parLetra = name => ({ bg: VAR[name] || 'var(--tinta)', fg: CLARAS.includes(name) ? 'var(--tinta)' : 'var(--papel)' });
 
-  // título: 1ª línea GRANDE, el resto chico. Secuencia de color dominada por neutros + acento con cuentagotas.
+  // título: ritmo CONTROLADO (rotación alternada chica, baseline alineada), color restringido
   function titularHTML() {
     const lineas = val('titulo').split('\n');
     const acento = val('acento');
-    const seqG = ['blanco','tinta','papel','tinta','blanco', acento];   // grande: neutros, 1 acento
+    const inv = val('base') === 'azul';
+    // modo SÓLIDO: tipografía de póster, no recorte
+    if (val('titstyle') === 'solido') {
+      const l1 = lineas[0] ? `<div class="reng l1">${esc(lineas[0])}</div>` : '';
+      const resto = lineas.slice(1).join(' ').trim();
+      const l2 = resto ? `<div class="reng l2">${esc(resto)}</div>` : '';
+      return `<div class="titulo solido" style="--acc:${VAR[acento]||'var(--amarillo)'}">${l1}${l2}</div>`;
+    }
+    // secuencia dominada por un tono fuerte + acento con cuentagotas
+    const seqL1 = inv ? ['papel','blanco','papel', acento,'papel','blanco'] : ['tinta','tinta', acento,'tinta','blanco','tinta'];
     const out = [];
     let gi = 0;
-    // línea 1 (grande)
     if (lineas[0]) {
-      const palabras = casofn(lineas[0]).split(/\s+/).filter(Boolean).map(pal => {
+      const palabras = lineas[0].toUpperCase().split(/\s+/).filter(Boolean).map(pal => {
         const letras = [...pal].map(ch => {
-          const par = parLetra(seqG[gi % seqG.length]);
-          const rot = ((gi*37)%9)-4, yo=(((gi*53)%7)-3)*0.35, clip=CLIPS[gi%CLIPS.length]; gi++;
-          return `<span class="chip" style="background:${par.bg};color:${par.fg};clip-path:${clip};transform:rotate(${rot}deg);margin-top:calc(var(--u)*${yo})">${esc(ch)}</span>`;
+          const par = parLetra(seqL1[gi % seqL1.length]);
+          const rot = (gi % 2 ? 1 : -1) * (1.4 + (gi*13 % 7)*0.12); gi++;
+          return `<span class="chip" style="background:${par.bg};color:${par.fg};clip-path:${CLIPS[gi%CLIPS.length]};transform:rotate(${rot.toFixed(2)}deg)">${esc(ch)}</span>`;
         }).join('');
         return `<span class="palabra">${letras}</span>`;
       }).join('');
-      out.push(`<div class="reng grande">${palabras}</div>`);
+      out.push(`<div class="reng l1">${palabras}</div>`);
     }
-    // resto (chico) — una sola línea con las palabras del resto
     const resto = lineas.slice(1).join(' ').trim();
     if (resto) {
       let ci = 0;
-      const palabras = casofn(resto).split(/\s+/).filter(Boolean).map(pal => {
+      const col = inv ? 'blanco' : 'tinta';
+      const palabras = resto.toUpperCase().split(/\s+/).filter(Boolean).map(pal => {
         const letras = [...pal].map(ch => {
-          const par = parLetra(ci % 4 === 0 ? acento : (ci % 2 ? 'tinta' : 'blanco'));
-          const rot = ((ci*29)%7)-3; ci++;
+          const par = parLetra(ci === 1 ? acento : col);
+          const rot = (ci % 2 ? 1 : -1) * 1.2; ci++;
           return `<span class="chip" style="background:${par.bg};color:${par.fg};transform:rotate(${rot}deg)">${esc(ch)}</span>`;
         }).join('');
         return `<span class="palabra">${letras}</span>`;
       }).join('');
-      out.push(`<div class="reng chico">${palabras}</div>`);
+      out.push(`<div class="reng l2">${palabras}</div>`);
     }
     return `<div class="titulo">${out.join('')}</div>`;
   }
 
-  // ---- tratamientos de imagen ----
   function autoNiveles(data, w, h) {
     const vals = [];
     for (let y=0; y<h; y+=3) for (let x=0; x<w; x+=3) { const i=(y*w+x)*4; if (data[i+3]>60) vals.push(0.299*data[i]+0.587*data[i+1]+0.114*data[i+2]); }
@@ -204,7 +240,7 @@
     return [vals[Math.floor(vals.length*0.04)], Math.max(vals[Math.floor(vals.length*0.96)], vals[0]+1)];
   }
   function halftoneDuo(img, ink, celda) {
-    const max = 760; let w = img.naturalWidth, h = img.naturalHeight;
+    const max = 820; let w = img.naturalWidth, h = img.naturalHeight;
     const k = Math.min(1, max/Math.max(w,h)); w = Math.round(w*k); h = Math.round(h*k);
     const t = document.createElement('canvas'); t.width=w; t.height=h;
     const tc = t.getContext('2d'); tc.drawImage(img, 0, 0, w, h);
@@ -240,32 +276,30 @@
     ctx.putImageData(id,0,0); return c;
   }
 
-  function recorteHTML(n) {
-    if (!on('slot'+n)) return '';
-    const trat = val('img'+n+'_trat'), src = val('img'+n);
-    const x=val('img'+n+'_x'), y=val('img'+n+'_y'), tam=val('img'+n+'_tam'), giro=val('img'+n+'_giro');
-    const estilo = `left:${x}%; top:${y}%; width:${tam}%; transform:rotate(${giro}deg);`;
-    if (trat === 'sticker') {
-      const inner = src ? `<img data-raw="${esc(src)}" alt="" crossorigin="anonymous">` : `<div class="caja"><span>sticker ${n}</span></div>`;
-      return `<div class="recorte sticker" data-slot="${n}" data-trat="sticker" style="${estilo}">${inner}</div>`;
-    }
-    const seed = n===1 ? 137 : 613;
-    const out = dentado(seed, 22, 3.4), inn = dentado(seed+5, 22, 2.4);
-    const inner = src ? `<img data-raw="${esc(src)}" alt="" crossorigin="anonymous" style="clip-path:${inn}">`
-                      : `<div class="caja" style="clip-path:${inn}"><span>foto ${n}</span></div>`;
-    return `<div class="recorte" data-slot="${n}" data-trat="duotono" data-inn="${esc(inn)}" style="${estilo}"><div class="marco" style="clip-path:${out}">${inner}</div></div>`;
+  // hero (imagen principal en la ventana de grilla) + sticker accent opcional
+  function heroHTML() {
+    if (!on('slot1')) return '';
+    const src = val('img1');
+    const inner = src ? `<img data-raw="${esc(src)}" data-slot="1" alt="" crossorigin="anonymous">` : `<div class="caja"><span>imagen principal</span></div>`;
+    return `<div class="hero">${inner}</div>`;
+  }
+  function stickerHTML() {
+    if (!on('slot2')) return '';
+    const src = val('img2');
+    const inner = src ? `<img data-raw="${esc(src)}" data-slot="2" alt="" crossorigin="anonymous">` : '';
+    return `<div class="sticker-acc">${inner}</div>`;
   }
   function procesarImagenes() {
     const celda = Math.max(2, Number(val('trama'))||5);
-    const tareas = [...document.querySelectorAll('.recorte')].map(cont => (async () => {
-      const n = cont.dataset.slot, img = cont.querySelector('img[data-raw]'); if (!img) return;
+    const tareas = [...document.querySelectorAll('img[data-raw]')].map(img => (async () => {
+      const n = img.dataset.slot;
       const src = await resolverSrc(img.dataset.raw); if (!src) return;
       await new Promise(res => { img.onload = res; img.onerror = res; img.src = src; });
       if (!img.naturalWidth) return;
       try {
-        let cv;
-        if (cont.dataset.trat === 'sticker') cv = quitarFondo(img);
-        else { cv = halftoneDuo(img, RGB[val('img'+n+'_duo')] || RGB.azul, celda); cv.style.clipPath = cont.dataset.inn; }
+        const trat = val('img'+n+'_trat');
+        const cv = trat === 'sticker' ? quitarFondo(img) : halftoneDuo(img, RGB[val('img'+n+'_duo')] || RGB.azul, celda);
+        if (n === '1') cv.style.objectFit = (trat === 'duotono' ? 'cover' : 'contain');
         img.replaceWith(cv);
       } catch (e) {}
     })());
@@ -278,34 +312,39 @@
     pieza.className = `pieza activa${val('base')==='azul'?' inv':''}${on('fondo')?'':' sin-fondo'}`;
     pieza.dataset.formato = f;
     pieza.style.setProperty('--u', (dim.w/100)+'px');
+    const FB = ",'Archivo Black',system-ui,sans-serif";
+    const FONTS = { anton:["'Anton'"+FB,400], archivo:["'Archivo Black'"+FB,400], clash:["'Clash Display'"+FB,700], cabinet:["'Cabinet Grotesk'"+FB,800], syne:["'Syne'"+FB,800], bricolage:["'Bricolage Grotesque'"+FB,800] };
+    const sf = FONTS[val('titfont')] || FONTS.clash;
+    pieza.style.setProperty('--solfont', sf[0]); pieza.style.setProperty('--solweight', sf[1]);
     pieza.style.width = dim.w+'px'; pieza.style.height = dim.h+'px';
 
-    const etq = val('etiqueta').trim() ? `<div class="tag">${esc(val('etiqueta'))}</div>` : '';
-    const info = on('mostrar_info') && val('info').trim() ? `<p class="info">${esc(val('info'))}</p>` : '';
+    const fecha = val('fecha').trim() ? `<span class="tag-fecha">${esc(val('fecha'))}</span><br>` : '';
+    const info = val('info').trim() ? esc(val('info')) : '';
 
     pieza.innerHTML = `<div class="lienzo">
-      <div class="fondo"><div class="tex-papel"></div><div class="tex-grano" style="opacity:${(Number(val('grano'))||0)/100}"></div></div>
-      <div class="panel"><div class="pint trama"></div></div>
-      ${recorteHTML(2)}
-      ${recorteHTML(1)}
-      <div class="capa">${etq}</div>
+      <div class="fondo"><div class="tex-trama"></div><div class="tex-papel"></div><div class="tex-grano" style="opacity:${(Number(val('grano'))||0)/100}"></div></div>
+      ${heroHTML()}
+      ${stickerHTML()}
       ${titularHTML()}
-      <div class="pie">${info}<span class="handle">${esc(val('handle'))}</span></div>
+      <div class="meta"><div class="izq">${fecha}${info}</div><div class="der">${esc(val('handle'))}</div></div>
     </div>`;
 
     ajustarTitular();
+    requestAnimationFrame(ajustarTitular);   // segunda pasada tras asentar fuente/layout
     ajustarVista(dim);
     const m = document.getElementById('medida'); if (m) m.textContent = `${dim.w} × ${dim.h} px`;
     await procesarImagenes();
   }
 
   function ajustarTitular() {
-    const pieza = document.getElementById('pieza'); const t = pieza.querySelector('.titulo'); const g = pieza.querySelector('.reng.grande'); if (!g || !t) return;
-    pieza.style.setProperty('--tf', '1');
-    const u = parseFloat(getComputedStyle(pieza).getPropertyValue('--u')) || 10;
-    const avail = t.clientWidth - u*1.5;
-    const need = g.scrollWidth * 1.12;     // margen por la rotación/sombra de las letras
-    if (need > avail) pieza.style.setProperty('--tf', Math.max(0.35, avail/need).toFixed(3));
+    const pieza = document.getElementById('pieza'); const t = pieza.querySelector('.titulo'); if (!t) return;
+    const l1 = t.querySelector('.reng.l1'), l2 = t.querySelector('.reng.l2');
+    pieza.style.setProperty('--tf','1'); pieza.style.setProperty('--tf2','1');
+    const solido = val('titstyle') === 'solido';
+    const avail = (t.clientWidth) * (solido ? 0.985 : 0.995);
+    const kE = solido ? 1.16 : 1.1;   // margen extra en sólido por scaleX + borde áspero
+    if (l1) { const need = l1.scrollWidth*kE; if (need>avail) pieza.style.setProperty('--tf', Math.max(0.3, avail/need).toFixed(3)); }
+    if (l2) { const need = l2.scrollWidth*(solido?1.12:1.08); if (need>avail) pieza.style.setProperty('--tf2', Math.max(0.3, avail/need).toFixed(3)); }
   }
 
   function ajustarVista(dim) {
