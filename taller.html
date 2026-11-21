@@ -7,7 +7,7 @@
 <!--
   Editor paramétrico de Lista Construir (interfaz estilo rastro). Maneja pieza.html por la URL.
   Imágenes: picker visual con banco (assets/manifest.json) + fotos subidas por el usuario (IndexedDB,
-  compartida con pieza.html). Export: PNG con fondo, PNG sin fondo, PDF. Abrir con Live Server.
+  compartida con pieza.html). Export: PNG, SVG y PDF editable. Abrir con Live Server.
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -98,7 +98,8 @@
   <button class="btn" id="sig" aria-label="Formato siguiente">→</button>
   <button class="btn acc" id="png">PNG</button>
   <button class="btn acc" id="png0">PNG sin fondo</button>
-  <button class="btn acc" id="pdf">PDF</button>
+  <button class="btn acc" id="svg">SVG</button>
+  <button class="btn acc" id="pdf">PDF editable</button>
   <p class="estado" id="estado">← → cambia de formato. Los ajustes se guardan solos y valen para los tres formatos.</p>
 </header>
 
@@ -181,7 +182,6 @@
   ];
 
   const LIB_IMG = 'https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.js';
-  const LIB_PDF = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
   const CLAVE = 'construir-taller';
   const $ = id => document.getElementById(id);
   const esc = t => String(t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -189,7 +189,7 @@
   try { actual = Math.max(0, FORMATOS.findIndex(x => x.f === localStorage.getItem(CLAVE+'-fmt'))); } catch(e){}
 
   const avisar = t => { $('estado').textContent = t; };
-  const ocupado = si => ['ant','sig','png','png0','pdf'].forEach(id => { $(id).disabled = si; });
+  const ocupado = si => ['ant','sig','png','png0','svg','pdf'].forEach(id => { $(id).disabled = si; });
 
   // ---- IndexedDB (compartida con pieza.html) ----
   function idbOpen(){ return new Promise((res,rej)=>{ const r=indexedDB.open('construir-fotos',1); r.onupgradeneeded=()=>r.result.createObjectStore('f'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
@@ -344,22 +344,24 @@
     await new Promise((ok,mal) => { const s = w.document.createElement('script'); s.src = LIB_IMG; s.onload = ok; s.onerror = () => mal(new Error('No se pudo cargar html-to-image (revisá la conexión).')); w.document.head.appendChild(s); });
     return w.htmlToImage;
   }
-  function cargarPDF() {
-    if (window.jspdf) return Promise.resolve();
-    return new Promise((ok,mal) => { const s = document.createElement('script'); s.src = LIB_PDF; s.onload = ok; s.onerror = () => mal(new Error('No se pudo cargar jsPDF.')); document.head.appendChild(s); });
-  }
   async function pngDataUrl(w, conFondo) {
     const x = FORMATOS[actual];
     const lib = await conLibreria(w);
     const nodo = w.document.querySelector('.pieza.activa');
+    const fontEmbedCSS = await lib.getFontEmbedCSS(nodo);
     if (!conFondo && w.setFondo) { w.setFondo(false); await new Promise(r => setTimeout(r, 60)); }
     try {
       return await lib.toPng(nodo, { width:x.w, height:x.h, pixelRatio:2, cacheBust:true,
-        backgroundColor: conFondo ? undefined : 'transparent', style:{ transform:'none' } });
+        backgroundColor: conFondo ? undefined : 'transparent', fontEmbedCSS, style:{ transform:'none' } });
     } finally { if (!conFondo && w.setFondo) w.setFondo(true); }
   }
   function descargar(href, nombre) { const a = Object.assign(document.createElement('a'), { href, download:nombre }); document.body.appendChild(a); a.click(); a.remove(); }
   const nombreBase = () => `construir-${FORMATOS[actual].f}`;
+  async function recursosExportacion(w, lib) {
+    const nodo = w.document.querySelector('.pieza.activa');
+    const fontEmbedCSS = await lib.getFontEmbedCSS(nodo);
+    return { nodo, fontEmbedCSS, x:FORMATOS[actual] };
+  }
 
   async function exportarPNG(conFondo) {
     ocupado(true);
@@ -370,18 +372,57 @@
     } catch(e) { avisar(`No se pudo exportar: ${e.message}`); } finally { ocupado(false); }
   }
   async function exportarPDF() {
+    const ventana = window.open('', '_blank');
+    if (!ventana) { avisar('Permití las ventanas emergentes para exportar el PDF editable.'); return; }
     ocupado(true);
     try { avisar('Exportando PDF…');
-      const w = await lista; await cargarPDF(); const x = FORMATOS[actual];
-      const img = await pngDataUrl(w, true);
-      const doc = new window.jspdf.jsPDF({ orientation: x.w >= x.h ? 'landscape' : 'portrait', unit:'px', format:[x.w, x.h] });
-      doc.addImage(img, 'PNG', 0, 0, x.w, x.h); doc.save(`${nombreBase()}.pdf`);
-      avisar(`Descargado: ${nombreBase()}.pdf`);
+      const w = await lista; const lib = await conLibreria(w);
+      const { nodo, fontEmbedCSS, x } = await recursosExportacion(w, lib);
+      const copia = nodo.cloneNode(true);
+      copia.querySelectorAll('canvas').forEach(canvas => {
+        const img = w.document.createElement('img');
+        for (const attr of canvas.attributes) img.setAttribute(attr.name, attr.value);
+        img.src = canvas.toDataURL('image/png');
+        canvas.replaceWith(img);
+      });
+      const defs = w.document.querySelector('body > svg')?.outerHTML || '';
+      const estiloImpresion = `<style>
+        @page { size:${x.w}px ${x.h}px; margin:0 }
+        html,body { width:${x.w}px!important; height:${x.h}px!important; margin:0!important; overflow:hidden!important; background:transparent!important }
+        * { -webkit-print-color-adjust:exact!important; print-color-adjust:exact!important }
+        .barra { display:none!important }
+        .escena { display:block!important; min-height:0!important; padding:0!important }
+        .marco-vista,.pieza { width:${x.w}px!important; height:${x.h}px!important; transform:none!important }
+      </style>`;
+      ventana.document.open();
+      ventana.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8"><base href="${esc(w.location.href)}">${w.document.head.innerHTML}<style>${fontEmbedCSS.replace(/<\/style/gi, '<\\/style')}</style>${estiloImpresion}<title>${nombreBase()}</title></head><body>${defs}<main class="escena"><div class="marco-vista">${copia.outerHTML}</div></main></body></html>`);
+      ventana.document.close();
+      await ventana.document.fonts.ready;
+      await Promise.all([...ventana.document.images].map(img => img.decode()));
+      await new Promise(resolve => ventana.requestAnimationFrame(() => ventana.requestAnimationFrame(resolve)));
+      ventana.focus();
+      ventana.print();
+      avisar('En el diálogo de impresión, elegí “Guardar como PDF” para conservar texto y vectores editables.');
+    } catch(e) {
+      ventana.close();
+      avisar(`No se pudo exportar: ${e.message}`);
+    } finally { ocupado(false); }
+  }
+
+  async function exportarSVG() {
+    ocupado(true);
+    try { avisar('Exportando SVG…');
+      const w = await lista; const lib = await conLibreria(w);
+      const { nodo, fontEmbedCSS, x } = await recursosExportacion(w, lib);
+      const svg = await lib.toSvg(nodo, { width:x.w, height:x.h, cacheBust:true, fontEmbedCSS, style:{ transform:'none' } });
+      descargar(svg, `${nombreBase()}.svg`);
+      avisar(`Descargado: ${nombreBase()}.svg`);
     } catch(e) { avisar(`No se pudo exportar: ${e.message}`); } finally { ocupado(false); }
   }
 
   $('png').addEventListener('click', () => exportarPNG(true));
   $('png0').addEventListener('click', () => exportarPNG(false));
+  $('svg').addEventListener('click', () => exportarSVG());
   $('pdf').addEventListener('click', () => exportarPDF());
   $('ant').addEventListener('click', () => cargar(actual-1).catch(e=>avisar(e.message)));
   $('sig').addEventListener('click', () => cargar(actual+1).catch(e=>avisar(e.message)));

@@ -13,8 +13,8 @@
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Archivo:wght@400;500;600;700;800;900&family=Syne:wght@700;800&family=Bricolage+Grotesque:wght@700;800&display=swap">
-<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=cabinet-grotesk@700,800&display=swap">
+<link rel="stylesheet" crossorigin="anonymous" href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Archivo:wght@400;500;600;700;800;900&family=Syne:wght@700;800&family=Bricolage+Grotesque:wght@700;800&display=swap">
+<link rel="stylesheet" crossorigin="anonymous" href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=cabinet-grotesk@700,800&display=swap">
 <style>
   :root {
     --azul:#2340E8; --azul-s:#15299e; --papel:#F3EAD3; --tinta:#14151c; --amarillo:#FFD400; --magenta:#9C0048; --lima:#9ABF1F; --blanco:#FCFBF4;
@@ -329,8 +329,14 @@
       <div class="meta"><div class="izq">${fecha}${info}</div><div class="der">${esc(val('handle'))}</div></div>
     </div>`;
 
+    const textos = [...pieza.querySelectorAll('.titulo.solido .reng, .titulo:not(.solido) .chip')];
+    await Promise.all(textos.map(el => {
+      const estilo = getComputedStyle(el);
+      return document.fonts.load(estilo.font, el.textContent || ' ');
+    }));
+    await document.fonts.ready;
     ajustarTitular();
-    requestAnimationFrame(ajustarTitular);   // segunda pasada tras asentar fuente/layout
+    await new Promise(resolve => requestAnimationFrame(() => { ajustarTitular(); resolve(); }));
     ajustarVista(dim);
     const m = document.getElementById('medida'); if (m) m.textContent = `${dim.w} × ${dim.h} px`;
     await procesarImagenes();
